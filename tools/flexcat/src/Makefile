@@ -72,6 +72,9 @@ ifndef (OS)
   ifeq ($(HOST), Linux)
     OS = unix
   else
+  ifeq ($(HOST), Haiku)
+    OS = haiku
+  else
   ifeq ($(HOST), Windows)
     OS = mingw32
   else
@@ -404,6 +407,27 @@ ifeq ($(OS), unix)
   SYSDEPOBJS = locale_other.o
 
 endif
+
+ifeq ($(OS), haiku)
+
+  ##############################
+  # Haiku
+
+  ifneq ($(HOST), haiku)
+    CC      = x86_64-haiku-gnu-gcc
+    STRIP   = x86_64-haiku-gnu-strip
+    OBJDUMP = x86_64-haiku-gnu-objdump
+  endif
+
+  # Compiler/Linker flags
+  OPTFLAGS = -O3 -fomit-frame-pointer
+  CFLAGS += -D_GNU_SOURCE
+  LDFLAGS = 
+
+  SYSDEPOBJS = locale_other.o
+
+endif
+endif
 endif
 endif
 endif
@@ -469,6 +493,9 @@ release:
 	@echo "  CC $<"
 	make OS=mingw32 clean
 	make OS=mingw32 DEBUG=
+	@echo "  CC $<"
+	make OS=haiku clean
+	make OS=haiku DEBUG=
 
 # make the object directories
 $(OBJDIR):
