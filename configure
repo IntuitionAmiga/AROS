@@ -905,7 +905,6 @@ infodir
 docdir
 oldincludedir
 includedir
-runstatedir
 localstatedir
 sharedstatedir
 sysconfdir
@@ -1037,7 +1036,6 @@ datadir='${datarootdir}'
 sysconfdir='${prefix}/etc'
 sharedstatedir='${prefix}/com'
 localstatedir='${prefix}/var'
-runstatedir='${localstatedir}/run'
 includedir='${prefix}/include'
 oldincludedir='/usr/include'
 docdir='${datarootdir}/doc/${PACKAGE}'
@@ -1290,15 +1288,6 @@ do
   | -silent | --silent | --silen | --sile | --sil)
     silent=yes ;;
 
-  -runstatedir | --runstatedir | --runstatedi | --runstated \
-  | --runstate | --runstat | --runsta | --runst | --runs \
-  | --run | --ru | --r)
-    ac_prev=runstatedir ;;
-  -runstatedir=* | --runstatedir=* | --runstatedi=* | --runstated=* \
-  | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
-  | --run=* | --ru=* | --r=*)
-    runstatedir=$ac_optarg ;;
-
   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
     ac_prev=sbindir ;;
   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
@@ -1436,7 +1425,7 @@ fi
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
 		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
-		libdir localedir mandir runstatedir
+		libdir localedir mandir
 do
   eval ac_val=\$$ac_var
   # Remove trailing slashes.
@@ -1589,7 +1578,6 @@ Fine tuning of the installation directories:
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
   --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
-  --runstatedir=DIR       modifiable per-process data [LOCALSTATEDIR/run]
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
   --oldincludedir=DIR     C header files for non-gcc [/usr/include]
@@ -5137,6 +5125,22 @@ $as_echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
                 ;;
         esac
         ;;
+        
+    haiku*)
+        aros_host_arch="haiku"
+        aros_host_cflags="$aros_host_cflags $aros_host_cc_pipe"
+        case "$host_cpu" in
+            *x86_64*)
+                aros_host_cpu="x86_64"
+                ;;
+            *)
+                { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&5
+$as_echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
+                aros_host_cpu="$host_cpu"
+                ;;
+        esac
+        ;;
+
 
     freebsd*)
         aros_host_cflags="$aros_host_cflags $aros_host_cc_pipe -I/usr/local/include"
@@ -8052,8 +8056,6 @@ main ()
     if (*(data + i) != *(data3 + i))
       return 14;
   close (fd);
-  free (data);
-  free (data3);
   return 0;
 }
 _ACEOF
@@ -9172,6 +9174,37 @@ case "$target_os" in
             ;;
         esac
     ;;
+
+    haiku*)
+        HOST_WANTS_X11=yes
+        HOST_WANTS_GLX=yes
+        HOST_WANTS_SDL=yes
+        HOST_WANTS_DBUS=yes
+        HOST_WANTS_DLOPEN=yes
+        aros_target_arch="haiku"
+        aros_target_family="unknown"
+        case "$target_cpu" in
+            *x86_64*)
+                PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
+                aros_target_cpu="x86_64"
+                aros_object_format="elf_x86_64"
+                aros_flavour="emulation"
+                aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64 -D__haiku__"
+                aros_isa_flags="$""(ISA_X8664_FLAGS)"
+                aros_kernel_isa_flags="-m64"
+                x86_64_isa_extra="$x86_64_isa_extra $""(CFLAGS_NO_RED_ZONE)"
+                aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_OMIT_FP)"
+                aros_config_cxxflags="$aros_config_cxxflags $""(CFLAGS_NO_OMIT_FP)"
+                aros_nominal_depth=8
+                pci_hidd_target="hidd-pci-linux"
+                ;;
+            *)
+                as_fn_error $? "\"Unknown CPU for Linux -- $target_cpu\"" "$LINENO" 5
+                ;;
+        esac
+    ;;
+
+
 
     pc)
         aros_target_arch="pc"
