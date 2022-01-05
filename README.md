@@ -1,3 +1,9 @@
+Fork of AROS repo to work on port of AROS-hosted to Haiku.
+
+See README.Haiku for more info.
+
+(c) 2022 Zayn Otley
+
 # AROS Git Repository [![Codacy Badge](https://app.codacy.com/project/badge/Grade/8dd5a86f87064c14ba75f291c045e788)](https://www.codacy.com/gh/aros-development-team/AROS/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=aros-development-team/AROS&amp;utm_campaign=Badge_Grade)
 
 > This is the main repository for active development of the AROS Operating System.
