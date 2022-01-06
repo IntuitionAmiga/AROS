@@ -1,1 +1,3 @@
 pkgman in lha gawk netpbm mako_python3 libx11_devel libsdl_devel
+./configure --target=haiku
+
