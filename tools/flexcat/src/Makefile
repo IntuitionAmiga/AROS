@@ -73,7 +73,7 @@ ifndef (OS)
     OS = unix
   else
   ifeq ($(HOST), Haiku)
-    OS = haiku
+    OS = Haiku
   else
   ifeq ($(HOST), Windows)
     OS = mingw32
@@ -406,14 +406,13 @@ ifeq ($(OS), unix)
 
   SYSDEPOBJS = locale_other.o
 
-endif
-
-ifeq ($(OS), haiku)
+else
+ifeq ($(OS), Haiku)
 
   ##############################
   # Haiku
 
-  ifneq ($(HOST), haiku)
+  ifneq ($(HOST), Haiku)
     CC      = x86_64-haiku-gnu-gcc
     STRIP   = x86_64-haiku-gnu-strip
     OBJDUMP = x86_64-haiku-gnu-objdump
@@ -422,10 +421,12 @@ ifeq ($(OS), haiku)
   # Compiler/Linker flags
   OPTFLAGS = -O3 -fomit-frame-pointer
   CFLAGS += -D_GNU_SOURCE
-  LDFLAGS = 
+  LDFLAGS = -liconv
 
   SYSDEPOBJS = locale_other.o
 
+
+endif
 endif
 endif
 endif
