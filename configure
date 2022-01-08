@@ -5126,22 +5126,6 @@ $as_echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
         esac
         ;;
         
-    haiku*)
-        aros_host_arch="haiku"
-        aros_host_cflags="$aros_host_cflags $aros_host_cc_pipe"
-        case "$host_cpu" in
-            *x86_64*)
-                aros_host_cpu="x86_64"
-                ;;
-            *)
-                { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&5
-$as_echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
-                aros_host_cpu="$host_cpu"
-                ;;
-        esac
-        ;;
-
-
     freebsd*)
         aros_host_cflags="$aros_host_cflags $aros_host_cc_pipe -I/usr/local/include"
         aros_host_make="gmake"
@@ -5157,6 +5141,26 @@ $as_echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
 
             *)
                 aros_object_format="elf_i386_fbsd"
+                ;;
+        esac
+
+        ;;
+
+    haiku*)
+        aros_host_cflags="$aros_host_cflags $aros_host_cc_pipe -I/usr/local/include"
+        aros_host_make="make"
+        aros_host_arch="haiku"
+        aros_host_cpu="x86_64"
+
+        aros_host_ldflags="$aros_host_ldflags -L/usr/local/lib -liconv"
+
+                        case $host_os in
+            haiku*)
+                aros_object_format="elf_i386"
+                ;;
+
+            *)
+                aros_object_format="elf_x864"
                 ;;
         esac
 
@@ -9175,33 +9179,7 @@ case "$target_os" in
         esac
     ;;
 
-    haiku*)
-        HOST_WANTS_X11=yes
-        HOST_WANTS_GLX=yes
-        HOST_WANTS_SDL=yes
-        HOST_WANTS_DBUS=no
-        HOST_WANTS_DLOPEN=no
-        aros_target_arch="haiku"
-        aros_target_family="unknown"
-        PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
-        aros_target_cpu="x86_64"
-        aros_object_format="elf_x86_64"
-        aros_flavour="emulation"
-        aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64 -D__haiku__"
-        aros_isa_flags="$""(ISA_X8664_FLAGS)"
-        aros_kernel_isa_flags="-m64"
-        x86_64_isa_extra="$x86_64_isa_extra $""(CFLAGS_NO_RED_ZONE)"
-        aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_OMIT_FP)"
-        aros_config_cxxflags="$aros_config_cxxflags $""(CFLAGS_NO_OMIT_FP)"
-        aros_nominal_depth=8
-        pci_hidd_target="hidd-pci-linux"
-        ;;
-    *)    
-    ;;
-
-
-
-    pc)
+     pc)
         aros_target_arch="pc"
         aros_shared_default="no"
         target_bootloader="grub2"
@@ -9278,6 +9256,22 @@ case "$target_os" in
         aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
         gcc_target_cpu="i386"
 
+        aros_target_strip_flags="-x"
+        ;;
+
+     haiku*)
+        PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
+        HOST_WANTS_X11=yes
+        HOST_WANTS_GLX=yes
+        HOST_WANTS_SDL=yes
+        HOST_WANTS_DBUS=yes
+        HOST_WANTS_DLOPEN=yes
+        aros_target_arch="haiku"
+        aros_target_family="unknown"
+        aros_target_cpu="x86_64"
+        aros_flavour="emulation"
+        aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64"
+        gcc_target_cpu="x86_64"
         aros_target_strip_flags="-x"
         ;;
 
