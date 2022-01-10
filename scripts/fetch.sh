@@ -21,7 +21,7 @@ fetch_mirrored()
 
     for mirror in $mirrors; do
         echo "Downloading from ${mirrosgroup}... "
-        if fetch "${mirror}/$origin" "${file}" "$destination"; then
+        if fetch "${mirror}$origin" "${file}" "$destination"; then
                 ret=true
                 break;
         fi
@@ -30,7 +30,7 @@ fetch_mirrored()
     $ret
 }
 
-gnu_mirrors="http://ftp.gnu.org/pub/gnu https://mirror.koddos.net/gnu/"
+gnu_mirrors="https://ftp.gnu.org/gnu"
 
 fetch_gnu()
 {
