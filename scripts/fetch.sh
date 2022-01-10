@@ -30,7 +30,7 @@ fetch_mirrored()
     $ret
 }
 
-gnu_mirrors="https://ftp.gnu.org/gnu"
+gnu_mirrors="http://mirror.lyrahosting.com/gnu https://ftp.gnu.org/gnu"
 
 fetch_gnu()
 {
