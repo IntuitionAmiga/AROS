@@ -14,6 +14,10 @@ BINUTILS_EXTRA_OPTS += --libdir=$(CROSSTOOLSDIR)/lib
 BINUTILS_EXTRA_OPTS += --with-sysroot=$(AROS_DEVELOPER)
 BINUTILS_EXTRA_OPTS += --disable-werror
 BINUTILS_EXTRA_OPTS += --disable-nls
+BINUTILS_EXTRA_OPTS += --with-pic
+BINUTILS_EXTRA_OPTS += -fPIC
+BINUTILS_EXTRA_OPTS += --enable-shared
+
 ifeq (yes, $(TARGET_LTO))
 BINUTILS_EXTRA_OPTS += --enable-plugins --enable-lto
 endif
@@ -61,6 +65,9 @@ ifneq (,$(findstring arm,$(AROS_TARGET_CPU)))
 GCC_COMMON_OPTS += --disable-libunwind-exceptions
 GCC_COMMON_OPTS += --disable-libstdcxx-verbose
 GCC_COMMON_OPTS += --with-multilib
+GCC_COMMON_OPTS += --with-pic
+GCC_COMMON_OPTS += -fPIC
+
 ifneq (,$(findstring big-endian,$(ISA_ARM_FLAGS)))
 GCC_LIBATOMIC_MULTILIB_TARGETS := \
 arm/eb/$(GCC_DEFAULT_FPU)/v7-a/$(GCC_DEFAULT_FLOAT_ABI);@marm@mbig-endian@mfpu=$(GCC_DEFAULT_FPU)@march=$(GCC_DEFAULT_CPU)@mfloat-abi=$(GCC_DEFAULT_FLOAT_ABI)
@@ -102,6 +109,8 @@ GCC_COMMON_OPTS += --disable-libssp
 GCC_COMMON_OPTS += --disable-libstdcxx-pch
 GCC_COMMON_OPTS += --disable-build-with-cxx
 GCC_COMMON_OPTS += --disable-build-poststage1-with-cxx
+GCC_COMMON_OPTS += --with-pic
+GCC_COMMON_OPTS += --enable-shared
 
 ifeq (,$(GCC_EXTRA_OPTS))
 GCC_EXTRA_OPTS += $(GCC_COMMON_OPTS)
@@ -458,9 +467,9 @@ else
         CC="" \
         CXX="" \
         LD="" \
-        CFLAGS="" \
-        CXXFLAGS="" \
-        LDFLAGS="" \
+        CFLAGS="-fPIC" \
+        CXXFLAGS="-fPIC" \
+        LDFLAGS="-fPIC" \
         LT_LDFLAGS=""
 endif
 ifeq (no,yes)
@@ -521,7 +530,7 @@ ifeq (yes,yes)
     crosstools-gmp--config_opts += --host=$(AROS_TARGET_CPU)-aros
 endif
 ifeq (yes,yes)
-    crosstools-gmp--config_opts += --without-pic --disable-shared
+    crosstools-gmp--config_opts +=  --disable-shared
 ifeq (yes,yes)
 # disable native language support
     crosstools-gmp--config_opts += --disable-nls
@@ -561,7 +570,7 @@ ifeq (yes,yes)
     crosstools-gmp--config_opts += --host=$(AROS_TARGET_CPU)-aros
 endif
 ifeq (yes,yes)
-    crosstools-gmp--config_opts += --without-pic --disable-shared
+    crosstools-gmp--config_opts += --disable-shared
 ifeq (yes,yes)
 # disable native language support
     crosstools-gmp--config_opts += --disable-nls
@@ -1004,9 +1013,9 @@ else
         CC="" \
         CXX="" \
         LD="" \
-        CFLAGS="" \
-        CXXFLAGS="" \
-        LDFLAGS="" \
+        CFLAGS="-fPIC" \
+        CXXFLAGS="-fPIC" \
+        LDFLAGS="-fPIC" \
         LT_LDFLAGS=""
 endif
 ifeq (no,yes)
@@ -1067,7 +1076,7 @@ ifeq (yes,yes)
     crosstools-isl--config_opts += --host=$(AROS_TARGET_CPU)-aros
 endif
 ifeq (yes,yes)
-    crosstools-isl--config_opts += --without-pic --disable-shared
+    crosstools-isl--config_opts +=  --disable-shared
 ifeq (yes,yes)
 # disable native language support
     crosstools-isl--config_opts += --disable-nls
@@ -1107,7 +1116,7 @@ ifeq (yes,yes)
     crosstools-isl--config_opts += --host=$(AROS_TARGET_CPU)-aros
 endif
 ifeq (yes,yes)
-    crosstools-isl--config_opts += --without-pic --disable-shared
+    crosstools-isl--config_opts +=  --disable-shared
 ifeq (yes,yes)
 # disable native language support
     crosstools-isl--config_opts += --disable-nls
@@ -1550,9 +1559,9 @@ else
         CC="" \
         CXX="" \
         LD="" \
-        CFLAGS="" \
-        CXXFLAGS="" \
-        LDFLAGS="" \
+        CFLAGS="-fPIC" \
+        CXXFLAGS="-fPIC" \
+        LDFLAGS="-fPIC" \
         LT_LDFLAGS=""
 endif
 ifeq (no,yes)
@@ -1613,7 +1622,7 @@ ifeq (yes,yes)
     crosstools-mpfr--config_opts += --host=$(AROS_TARGET_CPU)-aros
 endif
 ifeq (yes,yes)
-    crosstools-mpfr--config_opts += --without-pic --disable-shared
+    crosstools-mpfr--config_opts +=  --disable-shared
 ifeq (yes,yes)
 # disable native language support
     crosstools-mpfr--config_opts += --disable-nls
@@ -1653,7 +1662,7 @@ ifeq (yes,yes)
     crosstools-mpfr--config_opts += --host=$(AROS_TARGET_CPU)-aros
 endif
 ifeq (yes,yes)
-    crosstools-mpfr--config_opts += --without-pic --disable-shared
+    crosstools-mpfr--config_opts +=  --disable-shared
 ifeq (yes,yes)
 # disable native language support
     crosstools-mpfr--config_opts += --disable-nls
@@ -2098,7 +2107,7 @@ else
         LD="" \
         CFLAGS="-fPIC" \
         CXXFLAGS="-fPIC" \
-        LDFLAGS="" \
+        LDFLAGS="-fPIC" \
         LT_LDFLAGS=""
 endif
 ifeq (no,yes)
@@ -2159,7 +2168,7 @@ ifeq (yes,yes)
     crosstools-mpc--config_opts += --host=$(AROS_TARGET_CPU)-aros
 endif
 ifeq (yes,yes)
-    crosstools-mpc--config_opts += --without-pic --disable-shared
+    crosstools-mpc--config_opts +=  --disable-shared
 ifeq (yes,yes)
 # disable native language support
     crosstools-mpc--config_opts += --disable-nls
@@ -2199,7 +2208,7 @@ ifeq (yes,yes)
     crosstools-mpc--config_opts += --host=$(AROS_TARGET_CPU)-aros
 endif
 ifeq (yes,yes)
-    crosstools-mpc--config_opts += --without-pic --disable-shared
+    crosstools-mpc--config_opts +=  --disable-shared
 ifeq (yes,yes)
 # disable native language support
     crosstools-mpc--config_opts += --disable-nls
@@ -2642,9 +2651,9 @@ else
         CC="" \
         CXX="" \
         LD="" \
-        CFLAGS="" \
-        CXXFLAGS="" \
-        LDFLAGS="" \
+        CFLAGS="-fPIC" \
+        CXXFLAGS="-fPIC" \
+        LDFLAGS="-fPIC" \
         LT_LDFLAGS=""
 endif
 ifeq (no,yes)
@@ -2705,7 +2714,8 @@ ifeq (yes,yes)
     crosstools-binutils--config_opts += --host=$(AROS_TARGET_CPU)-aros
 endif
 ifeq (yes,yes)
-    crosstools-binutils--config_opts += --without-pic --disable-shared
+    crosstools-binutils--config_opts +=  
+    ##--disable-shared
 ifeq (yes,yes)
 # disable native language support
     crosstools-binutils--config_opts += --disable-nls
@@ -2745,7 +2755,8 @@ ifeq (yes,yes)
     crosstools-binutils--config_opts += --host=$(AROS_TARGET_CPU)-aros
 endif
 ifeq (yes,yes)
-    crosstools-binutils--config_opts += --without-pic --disable-shared
+    crosstools-binutils--config_opts +=  -fPIC
+    ##--disable-shared
 ifeq (yes,yes)
 # disable native language support
     crosstools-binutils--config_opts += --disable-nls
@@ -3235,9 +3246,9 @@ else
         CC="" \
         CXX="" \
         LD="" \
-        CFLAGS="" \
-        CXXFLAGS="" \
-        LDFLAGS="" \
+        CFLAGS="-fPIC" \
+        CXXFLAGS="-fPIC" \
+        LDFLAGS="-fPIC" \
         LT_LDFLAGS=""
 endif
 ifeq (no,yes)
@@ -3298,7 +3309,7 @@ ifeq (yes,yes)
     crosstools-gcc--config_opts += --host=$(AROS_TARGET_CPU)-aros
 endif
 ifeq (yes,yes)
-    crosstools-gcc--config_opts += --without-pic --disable-shared
+    crosstools-gcc--config_opts += --disable-shared
 ifeq (yes,yes)
 # disable native language support
     crosstools-gcc--config_opts += --disable-nls
@@ -3338,7 +3349,7 @@ ifeq (yes,yes)
     crosstools-gcc--config_opts += --host=$(AROS_TARGET_CPU)-aros
 endif
 ifeq (yes,yes)
-    crosstools-gcc--config_opts += --without-pic --disable-shared
+    crosstools-gcc--config_opts +=  --disable-shared
 ifeq (yes,yes)
 # disable native language support
     crosstools-gcc--config_opts += --disable-nls
@@ -3781,9 +3792,9 @@ else
         CC="" \
         CXX="" \
         LD="" \
-        CFLAGS="" \
-        CXXFLAGS="" \
-        LDFLAGS="" \
+        CFLAGS="-fPIC" \
+        CXXFLAGS="-fPIC" \
+        LDFLAGS="-fPIC" \
         LT_LDFLAGS=""
 endif
 ifeq (yes,yes)
@@ -3844,7 +3855,7 @@ ifeq (yes,yes)
     crosstools-gdb--config_opts += --host=$(AROS_TARGET_CPU)-aros
 endif
 ifeq (yes,yes)
-    crosstools-gdb--config_opts += --without-pic --disable-shared
+    crosstools-gdb--config_opts +=  --disable-shared
 ifeq (yes,yes)
 # disable native language support
     crosstools-gdb--config_opts += --disable-nls
@@ -3884,7 +3895,7 @@ ifeq (yes,yes)
     crosstools-gdb--config_opts += --host=$(AROS_TARGET_CPU)-aros
 endif
 ifeq (yes,yes)
-    crosstools-gdb--config_opts += --without-pic --disable-shared
+    crosstools-gdb--config_opts +=  --disable-shared
 ifeq (yes,yes)
 # disable native language support
     crosstools-gdb--config_opts += --disable-nls
@@ -4211,9 +4222,9 @@ else
         CC="" \
         CXX="" \
         LD="" \
-        CFLAGS="" \
-        CXXFLAGS="" \
-        LDFLAGS="" \
+        CFLAGS="-fPIC" \
+        CXXFLAGS="-fPIC" \
+        LDFLAGS="-fPIC" \
         LT_LDFLAGS=""
 endif
 ifeq (yes,yes)
@@ -4274,7 +4285,7 @@ ifeq (yes,yes)
     tools-crosstools-gcc-libatomic-config_opts += --host=$(AROS_TARGET_CPU)-aros
 endif
 ifeq (yes,yes)
-    tools-crosstools-gcc-libatomic-config_opts += --without-pic --disable-shared
+    tools-crosstools-gcc-libatomic-config_opts +=  --disable-shared
 ifeq (yes,yes)
 # disable native language support
     tools-crosstools-gcc-libatomic-config_opts += --disable-nls
@@ -4314,7 +4325,7 @@ ifeq (yes,yes)
     tools-crosstools-gcc-libatomic-config_opts += --host=$(AROS_TARGET_CPU)-aros
 endif
 ifeq (yes,yes)
-    tools-crosstools-gcc-libatomic-config_opts += --without-pic --disable-shared
+    tools-crosstools-gcc-libatomic-config_opts +=  --disable-shared
 ifeq (yes,yes)
 # disable native language support
     tools-crosstools-gcc-libatomic-config_opts += --disable-nls
