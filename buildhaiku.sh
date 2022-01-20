@@ -1,4 +1,4 @@
 #!/bin/bash
-./configure --with-gcc-version=12 --target=haiku
+./configure --with-gcc-version=10.2.0 --target=haiku
 make -j8
 

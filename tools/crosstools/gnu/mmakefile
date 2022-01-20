@@ -65,8 +65,6 @@ ifneq (,$(findstring arm,$(AROS_TARGET_CPU)))
 GCC_COMMON_OPTS += --disable-libunwind-exceptions
 GCC_COMMON_OPTS += --disable-libstdcxx-verbose
 GCC_COMMON_OPTS += --with-multilib
-GCC_COMMON_OPTS += --with-pic
-GCC_COMMON_OPTS += -fPIC
 
 ifneq (,$(findstring big-endian,$(ISA_ARM_FLAGS)))
 GCC_LIBATOMIC_MULTILIB_TARGETS := \
@@ -470,7 +468,7 @@ else
         CFLAGS="-fPIC" \
         CXXFLAGS="-fPIC" \
         LDFLAGS="-fPIC" \
-        LT_LDFLAGS=""
+        LT_LDFLAGS="-fPIC"
 endif
 ifeq (no,yes)
     crosstools-gmp--cfg-env += CPPFLAGS="$(strip $(BASE_CPPFLAGS) $(USER_CPPFLAGS) )"
@@ -530,7 +528,7 @@ ifeq (yes,yes)
     crosstools-gmp--config_opts += --host=$(AROS_TARGET_CPU)-aros
 endif
 ifeq (yes,yes)
-    crosstools-gmp--config_opts +=  --disable-shared
+    crosstools-gmp--config_opts +=  --enable-shared
 ifeq (yes,yes)
 # disable native language support
     crosstools-gmp--config_opts += --disable-nls
@@ -570,7 +568,7 @@ ifeq (yes,yes)
     crosstools-gmp--config_opts += --host=$(AROS_TARGET_CPU)-aros
 endif
 ifeq (yes,yes)
-    crosstools-gmp--config_opts += --disable-shared
+    crosstools-gmp--config_opts += --enable-shared
 ifeq (yes,yes)
 # disable native language support
     crosstools-gmp--config_opts += --disable-nls
@@ -685,7 +683,7 @@ $(crosstools-gmp--configflag) : $(crosstools-gmp--touchfileflag) $(TOP)/$(CURDIR
 	$(crosstools-gmp--init-env)
 	$(Q)cd $(crosstools-gmp--pkgdir) && \
 	find . -name config.cache -exec $(RM) '{}' \; && \
-	$(crosstools-gmp--cfg-env) $(TMP_SRCDIR)/configure $(crosstools-gmp--config_opts) --bindir=$(CROSSTOOLSDIR) --libdir=$(CROSSTOOLSDIR)/lib --disable-shared && \
+	$(crosstools-gmp--cfg-env) $(TMP_SRCDIR)/configure $(crosstools-gmp--config_opts) --bindir=$(CROSSTOOLSDIR) --libdir=$(CROSSTOOLSDIR)/lib --enable-shared && \
 	$(TOUCH) $@
 
 #MM
@@ -1016,7 +1014,7 @@ else
         CFLAGS="-fPIC" \
         CXXFLAGS="-fPIC" \
         LDFLAGS="-fPIC" \
-        LT_LDFLAGS=""
+        LT_LDFLAGS="-fPIC"
 endif
 ifeq (no,yes)
     crosstools-isl--cfg-env += CPPFLAGS="$(strip $(BASE_CPPFLAGS) $(USER_CPPFLAGS) )"
@@ -1076,7 +1074,7 @@ ifeq (yes,yes)
     crosstools-isl--config_opts += --host=$(AROS_TARGET_CPU)-aros
 endif
 ifeq (yes,yes)
-    crosstools-isl--config_opts +=  --disable-shared
+    crosstools-isl--config_opts +=  --enable-shared
 ifeq (yes,yes)
 # disable native language support
     crosstools-isl--config_opts += --disable-nls
@@ -1116,7 +1114,7 @@ ifeq (yes,yes)
     crosstools-isl--config_opts += --host=$(AROS_TARGET_CPU)-aros
 endif
 ifeq (yes,yes)
-    crosstools-isl--config_opts +=  --disable-shared
+    crosstools-isl--config_opts +=  --enable-shared
 ifeq (yes,yes)
 # disable native language support
     crosstools-isl--config_opts += --disable-nls
@@ -1231,7 +1229,7 @@ $(crosstools-isl--configflag) : $(crosstools-isl--touchfileflag) $(TOP)/$(CURDIR
 	$(crosstools-isl--init-env)
 	$(Q)cd $(crosstools-isl--pkgdir) && \
 	find . -name config.cache -exec $(RM) '{}' \; && \
-	$(crosstools-isl--cfg-env) $(TMP_SRCDIR)/configure $(crosstools-isl--config_opts) --bindir=$(CROSSTOOLSDIR) --libdir=$(CROSSTOOLSDIR)/lib --without-piplib --disable-shared && \
+	$(crosstools-isl--cfg-env) $(TMP_SRCDIR)/configure $(crosstools-isl--config_opts) --bindir=$(CROSSTOOLSDIR) --libdir=$(CROSSTOOLSDIR)/lib --without-piplib --enable-shared && \
 	$(TOUCH) $@
 
 #MM
@@ -1562,7 +1560,7 @@ else
         CFLAGS="-fPIC" \
         CXXFLAGS="-fPIC" \
         LDFLAGS="-fPIC" \
-        LT_LDFLAGS=""
+        LT_LDFLAGS="-fPIC"
 endif
 ifeq (no,yes)
     crosstools-mpfr--cfg-env += CPPFLAGS="$(strip $(BASE_CPPFLAGS) $(USER_CPPFLAGS) )"
@@ -1622,7 +1620,7 @@ ifeq (yes,yes)
     crosstools-mpfr--config_opts += --host=$(AROS_TARGET_CPU)-aros
 endif
 ifeq (yes,yes)
-    crosstools-mpfr--config_opts +=  --disable-shared
+    crosstools-mpfr--config_opts +=  --enable-shared
 ifeq (yes,yes)
 # disable native language support
     crosstools-mpfr--config_opts += --disable-nls
@@ -1662,7 +1660,7 @@ ifeq (yes,yes)
     crosstools-mpfr--config_opts += --host=$(AROS_TARGET_CPU)-aros
 endif
 ifeq (yes,yes)
-    crosstools-mpfr--config_opts +=  --disable-shared
+    crosstools-mpfr--config_opts +=  --enable-shared
 ifeq (yes,yes)
 # disable native language support
     crosstools-mpfr--config_opts += --disable-nls
@@ -1777,7 +1775,7 @@ $(crosstools-mpfr--configflag) : $(crosstools-mpfr--touchfileflag) $(TOP)/$(CURD
 	$(crosstools-mpfr--init-env)
 	$(Q)cd $(crosstools-mpfr--pkgdir) && \
 	find . -name config.cache -exec $(RM) '{}' \; && \
-	$(crosstools-mpfr--cfg-env) $(TMP_SRCDIR)/configure $(crosstools-mpfr--config_opts) --bindir=$(CROSSTOOLSDIR) --libdir=$(CROSSTOOLSDIR)/lib --disable-shared && \
+	$(crosstools-mpfr--cfg-env) $(TMP_SRCDIR)/configure $(crosstools-mpfr--config_opts) --bindir=$(CROSSTOOLSDIR) --libdir=$(CROSSTOOLSDIR)/lib --enable-shared && \
 	$(TOUCH) $@
 
 #MM
@@ -2108,7 +2106,7 @@ else
         CFLAGS="-fPIC" \
         CXXFLAGS="-fPIC" \
         LDFLAGS="-fPIC" \
-        LT_LDFLAGS=""
+        LT_LDFLAGS="-fPIC"
 endif
 ifeq (no,yes)
     crosstools-mpc--cfg-env += CPPFLAGS="$(strip $(BASE_CPPFLAGS) $(USER_CPPFLAGS) )"
@@ -2168,7 +2166,7 @@ ifeq (yes,yes)
     crosstools-mpc--config_opts += --host=$(AROS_TARGET_CPU)-aros
 endif
 ifeq (yes,yes)
-    crosstools-mpc--config_opts +=  --disable-shared
+    crosstools-mpc--config_opts +=  --enable-shared
 ifeq (yes,yes)
 # disable native language support
     crosstools-mpc--config_opts += --disable-nls
@@ -2208,7 +2206,7 @@ ifeq (yes,yes)
     crosstools-mpc--config_opts += --host=$(AROS_TARGET_CPU)-aros
 endif
 ifeq (yes,yes)
-    crosstools-mpc--config_opts +=  --disable-shared
+    crosstools-mpc--config_opts +=  --enable-shared
 ifeq (yes,yes)
 # disable native language support
     crosstools-mpc--config_opts += --disable-nls
@@ -2323,7 +2321,7 @@ $(crosstools-mpc--configflag) : $(crosstools-mpc--touchfileflag) $(TOP)/$(CURDIR
 	$(crosstools-mpc--init-env)
 	$(Q)cd $(crosstools-mpc--pkgdir) && \
 	find . -name config.cache -exec $(RM) '{}' \; && \
-	$(crosstools-mpc--cfg-env) $(TMP_SRCDIR)/configure $(crosstools-mpc--config_opts) --bindir=$(CROSSTOOLSDIR) --libdir=$(CROSSTOOLSDIR)/lib --disable-shared && \
+	$(crosstools-mpc--cfg-env) $(TMP_SRCDIR)/configure $(crosstools-mpc--config_opts) --bindir=$(CROSSTOOLSDIR) --libdir=$(CROSSTOOLSDIR)/lib --enable-shared && \
 	$(TOUCH) $@
 
 #MM
@@ -2654,7 +2652,7 @@ else
         CFLAGS="-fPIC" \
         CXXFLAGS="-fPIC" \
         LDFLAGS="-fPIC" \
-        LT_LDFLAGS=""
+        LT_LDFLAGS="-fPIC"
 endif
 ifeq (no,yes)
     crosstools-binutils--cfg-env += CPPFLAGS="$(strip $(BASE_CPPFLAGS) $(USER_CPPFLAGS) )"
@@ -2715,7 +2713,7 @@ ifeq (yes,yes)
 endif
 ifeq (yes,yes)
     crosstools-binutils--config_opts +=  
-    ##--disable-shared
+    ##--enable-shared
 ifeq (yes,yes)
 # disable native language support
     crosstools-binutils--config_opts += --disable-nls
@@ -2756,7 +2754,7 @@ ifeq (yes,yes)
 endif
 ifeq (yes,yes)
     crosstools-binutils--config_opts +=  -fPIC
-    ##--disable-shared
+    ##--enable-shared
 ifeq (yes,yes)
 # disable native language support
     crosstools-binutils--config_opts += --disable-nls
@@ -3249,7 +3247,7 @@ else
         CFLAGS="-fPIC" \
         CXXFLAGS="-fPIC" \
         LDFLAGS="-fPIC" \
-        LT_LDFLAGS=""
+        LT_LDFLAGS="-fPIC"
 endif
 ifeq (no,yes)
     crosstools-gcc--cfg-env += CPPFLAGS="$(strip $(BASE_CPPFLAGS) $(USER_CPPFLAGS) )"
@@ -3309,7 +3307,7 @@ ifeq (yes,yes)
     crosstools-gcc--config_opts += --host=$(AROS_TARGET_CPU)-aros
 endif
 ifeq (yes,yes)
-    crosstools-gcc--config_opts += --disable-shared
+    crosstools-gcc--config_opts += --enable-shared
 ifeq (yes,yes)
 # disable native language support
     crosstools-gcc--config_opts += --disable-nls
@@ -3349,7 +3347,7 @@ ifeq (yes,yes)
     crosstools-gcc--config_opts += --host=$(AROS_TARGET_CPU)-aros
 endif
 ifeq (yes,yes)
-    crosstools-gcc--config_opts +=  --disable-shared
+    crosstools-gcc--config_opts +=  --enable-shared
 ifeq (yes,yes)
 # disable native language support
     crosstools-gcc--config_opts += --disable-nls
@@ -3795,7 +3793,7 @@ else
         CFLAGS="-fPIC" \
         CXXFLAGS="-fPIC" \
         LDFLAGS="-fPIC" \
-        LT_LDFLAGS=""
+        LT_LDFLAGS="-fPIC"
 endif
 ifeq (yes,yes)
     crosstools-gdb--cfg-env += CPPFLAGS="$(strip $(BASE_CPPFLAGS) $(USER_CPPFLAGS) )"
@@ -3855,7 +3853,7 @@ ifeq (yes,yes)
     crosstools-gdb--config_opts += --host=$(AROS_TARGET_CPU)-aros
 endif
 ifeq (yes,yes)
-    crosstools-gdb--config_opts +=  --disable-shared
+    crosstools-gdb--config_opts +=  --enable-shared
 ifeq (yes,yes)
 # disable native language support
     crosstools-gdb--config_opts += --disable-nls
@@ -3895,7 +3893,7 @@ ifeq (yes,yes)
     crosstools-gdb--config_opts += --host=$(AROS_TARGET_CPU)-aros
 endif
 ifeq (yes,yes)
-    crosstools-gdb--config_opts +=  --disable-shared
+    crosstools-gdb--config_opts +=  --enable-shared
 ifeq (yes,yes)
 # disable native language support
     crosstools-gdb--config_opts += --disable-nls
@@ -4225,7 +4223,7 @@ else
         CFLAGS="-fPIC" \
         CXXFLAGS="-fPIC" \
         LDFLAGS="-fPIC" \
-        LT_LDFLAGS=""
+        LT_LDFLAGS="-fPIC"
 endif
 ifeq (yes,yes)
     tools-crosstools-gcc-libatomic-cfg-env += CPPFLAGS="$(strip $(BASE_CPPFLAGS) $(USER_CPPFLAGS) )"
@@ -4285,7 +4283,7 @@ ifeq (yes,yes)
     tools-crosstools-gcc-libatomic-config_opts += --host=$(AROS_TARGET_CPU)-aros
 endif
 ifeq (yes,yes)
-    tools-crosstools-gcc-libatomic-config_opts +=  --disable-shared
+    tools-crosstools-gcc-libatomic-config_opts +=  --enable-shared
 ifeq (yes,yes)
 # disable native language support
     tools-crosstools-gcc-libatomic-config_opts += --disable-nls
@@ -4325,7 +4323,7 @@ ifeq (yes,yes)
     tools-crosstools-gcc-libatomic-config_opts += --host=$(AROS_TARGET_CPU)-aros
 endif
 ifeq (yes,yes)
-    tools-crosstools-gcc-libatomic-config_opts +=  --disable-shared
+    tools-crosstools-gcc-libatomic-config_opts +=  --enable-shared
 ifeq (yes,yes)
 # disable native language support
     tools-crosstools-gcc-libatomic-config_opts += --disable-nls
