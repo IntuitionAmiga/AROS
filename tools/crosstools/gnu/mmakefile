@@ -15,7 +15,7 @@ BINUTILS_EXTRA_OPTS += --with-sysroot=$(AROS_DEVELOPER)
 BINUTILS_EXTRA_OPTS += --disable-werror
 BINUTILS_EXTRA_OPTS += --disable-nls
 BINUTILS_EXTRA_OPTS += --with-pic
-BINUTILS_EXTRA_OPTS += -fPIC
+##BINUTILS_EXTRA_OPTS += -fPIC
 BINUTILS_EXTRA_OPTS += --enable-shared
 
 ifeq (yes, $(TARGET_LTO))
