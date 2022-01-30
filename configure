@@ -3491,15 +3491,15 @@ if test "$ac_test_CXXFLAGS" = set; then
   CXXFLAGS=$ac_save_CXXFLAGS
 elif test $ac_cv_prog_cxx_g = yes; then
   if test "$GXX" = yes; then
-    CXXFLAGS="-g -O2"
+    CXXFLAGS="-g -O2 -fPIC"
   else
-    CXXFLAGS="-g"
+    CXXFLAGS="-g -fPIC"
   fi
 else
   if test "$GXX" = yes; then
-    CXXFLAGS="-O2"
+    CXXFLAGS="-O2 -fPIC"
   else
-    CXXFLAGS=
+    CXXFLAGS="-fPIC"
   fi
 fi
 ac_ext=c
@@ -3789,15 +3789,15 @@ if test "$ac_test_CFLAGS" = set; then
   CFLAGS=$ac_save_CFLAGS
 elif test $ac_cv_prog_cc_g = yes; then
   if test "$GCC" = yes; then
-    CFLAGS="-g -O2"
+    CFLAGS="-g -O2 -fPIC"
   else
-    CFLAGS="-g"
+    CFLAGS="-g -fPIC"
   fi
 else
   if test "$GCC" = yes; then
-    CFLAGS="-O2"
+    CFLAGS="-O2 -fPIC"
   else
-    CFLAGS=
+    CFLAGS="-fPIC"
   fi
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $CC option to accept ISO C89" >&5
@@ -8370,7 +8370,7 @@ case "$aros_toolchain" in
         toolchain_objcopy="llvm-objcopy"
         toolchain_objdump="llvm-objdump"
         use_libatomic=yes
-        toolchain_def_opt_lvl="-O2"
+        toolchain_def_opt_lvl="-O2 -fPIC"
         toolchain_debug_opt_lvl="-O0"
         toolchain_size_opt_lvl="-Os"
         aros_target_cflags="$""(CFLAGS_NO_INTEGRATED_AS)"
@@ -8400,7 +8400,7 @@ case "$aros_toolchain" in
         toolchain_objcopy="objcopy"
         toolchain_objdump="objdump"
         use_libatomic=yes
-        toolchain_def_opt_lvl="-O2"
+        toolchain_def_opt_lvl="-O2 -fPIC"
         toolchain_debug_opt_lvl="-O0"
         toolchain_size_opt_lvl="-Os"
         aros_cxx_ldflags="-static-libstdc++"
