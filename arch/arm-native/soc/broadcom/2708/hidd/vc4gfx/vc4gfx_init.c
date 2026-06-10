@@ -4,7 +4,7 @@
     Desc: BCM VideoCore4 Gfx Hidd initialisation code
 */
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #define __OOP_NOATTRBASES__
@@ -102,10 +102,16 @@ static int FNAME_SUPPORT(Init)(LIBBASETYPEPTR LIBBASE)
     xsd->vcsd_MBoxMessage =
         (unsigned int *)((xsd->vcsd_MBoxBuff + 0xF) & ~0x0000000F);
 
+    /* Initialise the mailbox lock here, before the first MBoxWrite/Read,
+     * so every subsequent transaction (including ones triggered before
+     * InitMem runs) can take it. */
+    InitSemaphore(&xsd->vcsd_GPUMemLock);
+
     D(bug("[VideoCoreGfx] %s: VideoCore Mailbox resource @ 0x%p\n", __PRETTY_FUNCTION__, MBoxBase));
     D(bug("[VideoCoreGfx] %s: VideoCore message buffer @ 0x%p\n", __PRETTY_FUNCTION__, xsd->vcsd_MBoxMessage));
 
 
+    VC4_MBOX_LOCK(xsd);
     xsd->vcsd_MBoxMessage[0] = AROS_LE2LONG(8 * 4);
     xsd->vcsd_MBoxMessage[1] = AROS_LE2LONG(VCTAG_REQ);
     xsd->vcsd_MBoxMessage[2] = AROS_LE2LONG(VCTAG_GETVCRAM);
@@ -117,21 +123,25 @@ static int FNAME_SUPPORT(Init)(LIBBASETYPEPTR LIBBASE)
 
     xsd->vcsd_MBoxMessage[7] = 0; // terminate tag
 
-    MBoxWrite((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage);
-    if (MBoxRead((void*)VCMB_BASE, VCMB_PROPCHAN) == xsd->vcsd_MBoxMessage)
     {
-        if (FNAME_SUPPORT(InitMem)((void*)AROS_LE2LONG(xsd->vcsd_MBoxMessage[5]), AROS_LE2LONG(xsd->vcsd_MBoxMessage[6]), LIBBASE))
+        BOOL  mbox_ok   = (MBoxCall((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage)
+                          != (volatile unsigned int *)-1);
+        void *vc_base   = (void*)AROS_LE2LONG(xsd->vcsd_MBoxMessage[5]);
+        ULONG vc_length = AROS_LE2LONG(xsd->vcsd_MBoxMessage[6]);
+        VC4_MBOX_UNLOCK(xsd);
+        if (mbox_ok && FNAME_SUPPORT(InitMem)(vc_base, vc_length, LIBBASE))
         {
-            bug("[VideoCoreGfx] VideoCore GPU Found\n");
+            D(bug("[VideoCoreGfx] VideoCore GPU Found\n"));
 
             FNAME_HW(InitGfxHW)((APTR)xsd);
+            FNAME_SUPPORT(InitCursor)(xsd);
 
             if ((GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 41)) != NULL)
             {
                 LIBBASE->vsd.vcsd_basebm = OOP_FindClass(CLID_Hidd_BitMap);
-                if (AddDisplayDriver(LIBBASE->vsd.vcsd_VideoCoreGfxClass, NULL, DDRV_BootMode, TRUE, TAG_DONE) == DD_OK)
+                if (AddDisplayDriver(LIBBASE->vsd.vcsd_VideoCoreGfxClass, NULL, TAG_DONE) == DD_OK)
                 {
-                    bug("[VideoCoreGfx] BootMode Display Driver Registered\n");
+                    D(bug("[VideoCoreGfx] Display Driver Registered\n"));
 
                     LIBBASE->library.lib_OpenCnt++;
                     retval = TRUE;
@@ -144,7 +154,7 @@ static int FNAME_SUPPORT(Init)(LIBBASETYPEPTR LIBBASE)
 failure:
     if (!(retval))
     {
-        bug("[VideoCoreGfx] No VideoCore GPU Found\n");
+        D(bug("[VideoCoreGfx] No VideoCore GPU Found\n"));
 
         FreeVec((APTR)xsd->vcsd_MBoxBuff);
 

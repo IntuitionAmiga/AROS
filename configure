@@ -858,6 +858,8 @@ aros_kernel_cxx
 aros_kernel_cc
 aros_kernel_cpp
 target_llvm_version
+gcc_float_cpu
+gcc_soft_cpu
 HARDVAR
 SOFTVAR
 target_gcc_version
@@ -6110,6 +6112,9 @@ printf "%s\n" "$LOC" >&6; }
             default_android_sdk="/android-sdk-mac_x86"
         fi
         case "$host_cpu" in
+            *aarch64*|*arm64*)
+                aros_host_cpu="aarch64"
+                ;;
             *i?86*)
                 aros_host_cpu="i386"
                 ;;
@@ -7917,7 +7922,7 @@ printf %s "checking if Python's mako templates are installed... " >&6; }
 for ac_prog in python \
      python3 \
      python2 \
-                         python4.0                    python3.9                    python3.8                    python3.7                    python3.6                    python3.5                    python3.4                    python3.3                    python3.2                    python3.1                    python3.0                                                            python2.7                    python2.6                    python2.5                    python2.4                    python2.3                    python2.2                    python2.1                    python2.0
+                         python4.0                    python3.9                    python3.8                    python3.7                    python3.6                    python3.5                    python3.4                    python3.3                    python3.2                    python3.1                    python3.0                                                            python2.7                    python2.6                    python2.5                    python2.4                    python2.3                    python2.2                    python2.1                    python2.0                    python
 do
   # Extract the first word of "$ac_prog", so it can be a program name with args.
 set dummy $ac_prog; ac_word=$2
@@ -9704,9 +9709,14 @@ case "$aros_toolchain" in
         toolchain_def_opt_lvl="-O2"
         toolchain_debug_opt_lvl="-O0"
         toolchain_size_opt_lvl="-Os"
-        aros_target_cflags="$""(CFLAGS_NO_INTEGRATED_AS)"
         aros_cxx_ldflags="-L$""(CROSSTOOLSDIR)/lib -stdlib=libc++ -static-libstdc++"
-        aros_config_aflags="$""(WARN_ALL) -no-integrated-as -x assembler-with-cpp -c"
+        if test "$aros_host_arch" = "darwin" ; then
+                                    aros_target_cflags=""
+            aros_config_aflags="$""(WARN_ALL) -x assembler-with-cpp -c"
+        else
+            aros_target_cflags="$""(CFLAGS_NO_INTEGRATED_AS)"
+            aros_config_aflags="$""(WARN_ALL) -no-integrated-as -x assembler-with-cpp -c"
+        fi
         toolchain_ld_fmtbinary="--format=binary"
         aros_nowarn_flags="$aros_nowarn_flags NOWARN_IGNORED_OPTIMIZATION_ARGUMENT"
         ;;
@@ -10457,7 +10467,7 @@ case "$target_cpu" in
                 x86_64_isa_extra+="--target=x86_64-unknown-aros "
                 if test "$target_cpu" = "x86_64"; then
                     target_needs_collect32=yes
-                    aros_target32_cpu=i386
+                    aros_target_cpu32=i386
                 fi
             ;;
             *)
@@ -10616,7 +10626,7 @@ case "$target_os" in
                 android_tool_prefix="arm-linux-androideabi"
                 android_ndk_arch="arm"
                 kernel_tool_prefix="arm-linux-gnueabihf-"
-                llvm_target_cpu="Arm"
+                llvm_target_cpu="ARM"
                 ;;
             *arm*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
@@ -10638,7 +10648,7 @@ case "$target_os" in
                 android_tool_prefix="arm-linux-androideabi"
                 android_ndk_arch="arm"
                 kernel_tool_prefix="arm-linux-gnueabi-"
-                llvm_target_cpu="Arm"
+                llvm_target_cpu="ARM"
                 ;;
             *)
                 as_fn_error $? "\"Unknown CPU for Linux -- $target_cpu\"" "$LINENO" 5
@@ -10820,22 +10830,34 @@ printf "%s\n" "$darwin_sdk_path" >&6; }
                 aros_target_cpu="x86_64"
                 aros_object_format="elf_x86_64"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64"
-                aros_isa_flags="$""(ISA_X8664_FLAGS)"
+                aros_isa_flags="$""(ISA_X8664_FLAGS))$export_newline""ISA_32_FLAGS                  = $""(strip $""(ISA_X86_FLAGS)"
                 aros_macosx_version="10.6"
                 aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_OMIT_FP)"
                 aros_config_cxxflags="$aros_config_cxxflags $""(CFLAGS_NO_OMIT_FP)"
-                aros_kernel_isa_flags="-m64"
-                aros_kernel_ldflags="-m64"
+                if test "$aros_host_cpu" = "aarch64" ; then
+                    aros_kernel_isa_flags="-arch x86_64"
+                    aros_kernel_ldflags="-arch x86_64"
+                else
+                    aros_kernel_isa_flags="-m64"
+                    aros_kernel_ldflags="-m64"
+                fi
                 aros_nominal_depth=8
                 aros_kernel_rs="$toolchain_ar"
                 aros_kernel_ar_flags="-cr"
                 aros_kernel_ld="$toolchain_ld"
                 aros_kernel_as="$toolchain_as"
-                aros_kernel_ranlib="$toolchain_ranlib"
-                aros_kernel_nm="$toolchain_nm"
+                aros_kernel_ranlib="ranlib"
+                aros_kernel_nm="nm"
                 aros_kernel_strip="strip"
                 kernel_tool_prefix="i686-apple-darwin10-"
                 llvm_target_cpu="X86"
+                aros_target_cpu32="i386"
+                target_isa_extra="TARGET_ISA_32_CFLAGS          = $""(ISA_32_FLAGS)$export_newline""TARGET_ISA_32_CXXFLAGS        = $""(ISA_32_FLAGS)$export_newline""TARGET_ISA_32_OBJCFLAGS       = $""(TARGET_ISA_32_CFLAGS)$export_newline""TARGET_ISA_32_AFLAGS          = $""(ISA_32_FLAGS)$export_newline""TARGET_ISA_32_LDFLAGS         = $""(ISA_32_FLAGS)$export_newline"
+                case "$aros_toolchain" in
+                    *llvm*)
+                        target_link_extra="TARGET_32_C_LIBS              = $""(strip -L$""(CROSSTOOLSDIR)/lib/generic -lclang_rt.builtins-$""(AROS_TARGET_CPU32))$export_newline"
+                        ;;
+                esac
                 ;;
             *ppc*)
                 aros_target_cpu="ppc"
@@ -10849,8 +10871,8 @@ printf "%s\n" "$darwin_sdk_path" >&6; }
                 aros_kernel_ar_flags="-cr"
                 aros_kernel_ld="$toolchain_ld -arch ppc"
                 aros_kernel_as="$toolchain_as -arch ppc"
-                aros_kernel_ranlib="$toolchain_ranlib -arch ppc"
-                aros_kernel_nm="$toolchain_nm -arch ppc"
+                aros_kernel_ranlib="ranlib -arch ppc"
+                aros_kernel_nm="nm -arch ppc"
                 aros_kernel_strip="strip -arch ppc"
                 kernel_tool_prefix="powerpc-apple-darwin10-"
                 llvm_target_cpu="PowerPC"
@@ -10867,10 +10889,10 @@ printf "%s\n" "$darwin_sdk_path" >&6; }
                 aros_kernel_rs="$toolchain_ar"
                 aros_kernel_ar_flags="-cr"
                 aros_kernel_ld="$toolchain_ld -arch arm"
-                aros_kernel_ranlib="$toolchain_ranlib -arch arm"
+                aros_kernel_ranlib="ranlib -arch arm"
                 kernel_tool_prefix="arm-apple-darwin10-"
                 export PATH="$aros_xcode_path/Platforms/$aros_ios_platform.platform/Developer/usr/bin:$PATH"
-                llvm_target_cpu="Arm"
+                llvm_target_cpu="ARM"
                 ;;
             *)
                 as_fn_error $? "\"Unsupported target CPU for darwin hosted flavour -- $target_cpu\"" "$LINENO" 5
@@ -11091,7 +11113,7 @@ printf "%s\n" "$darwin_sdk_path" >&6; }
 
                 target_cpu=arm
                 aros_target_cpu=arm
-                llvm_target_cpu="Arm"
+                llvm_target_cpu="ARM"
                 ;;
             *arm*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
@@ -11099,7 +11121,7 @@ printf "%s\n" "$darwin_sdk_path" >&6; }
                 gcc_float_fpu="vfpv3"
                 gcc_soft_fpu=
                 gcc_default_fpu=
-                llvm_target_cpu="Arm"
+                llvm_target_cpu="ARM"
                 ;;
             *)
                 as_fn_error $? "\"Unknown CPU for EfikaMX $target_cpu\"" "$LINENO" 5
@@ -11139,6 +11161,13 @@ printf "%s\n" "$darwin_sdk_path" >&6; }
 
         aros_target_mkdep="$aros_target_mkdep -D__GNUC__"
 
+        aros_kernel_toolchain=$aros_toolchain
+        kernel_toolchain_c_compiler=$toolchain_c_compiler
+        kernel_toolchain_cxx_compiler=$toolchain_cxx_compiler
+        if test "$aros_kernel_toolchain" = "llvm"; then
+            aros_kernel_llvmwrapper=yes
+        fi
+
         case "$target_cpu" in
             *aarch64*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
@@ -11151,20 +11180,16 @@ printf "%s\n" "$darwin_sdk_path" >&6; }
                 ;;
             *armhf*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
-                # we intentionaly leave
-                # gcc_default_cpu empty here
-                # so the correct value is loaded
-                # later.
                 if test "$aros_object_format" = "" ; then
                     aros_object_format="armelf_aros"
                 fi
                 aros_target_cpu="arm"
                 target_cpu="armhf"
 
-                gcc_float_fpu="vfpv3-d16"
+                gcc_float_fpu="neon-vfpv4"
                 gcc_soft_fpu=$gcc_float_fpu
                 gcc_default_fpu="$""(GCC_FLOAT_FPU)"
-                llvm_target_cpu="Arm"
+                llvm_target_cpu="ARM"
 
                 aros_isa_flags="$""(ISA_ARM_FLAGS)"
                 aros_config_cflags="$aros_config_cflags"
@@ -11185,10 +11210,10 @@ printf "%s\n" "$darwin_sdk_path" >&6; }
                 fi
                 aros_target_cpu="arm"
 
-                gcc_float_fpu="vfpv3-d16"
+                gcc_float_fpu="neon-vfpv4"
                 gcc_soft_fpu=""
                 gcc_default_fpu=
-                llvm_target_cpu="Arm"
+                llvm_target_cpu="ARM"
 
                 aros_isa_flags="$""(ISA_ARM_FLAGS)"
                 aros_config_cflags="$aros_config_cflags"
@@ -11260,7 +11285,7 @@ printf "%s\n" "$darwin_sdk_path" >&6; }
         gcc_float_fpu="fpv5-sp-d16"
         gcc_soft_fpu=$gcc_float_fpu
         gcc_default_fpu="$""(GCC_FLOAT_FPU)"
-        llvm_target_cpu="Arm"
+        llvm_target_cpu="ARM"
 
         aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dthumb"
         ;;
@@ -11514,7 +11539,7 @@ fi
                 kernel_tool_prefix="arm-mingw32ce-"
                 aros_nominal_width=160
                 aros_nominal_height=160
-                llvm_target_cpu="Arm"
+                llvm_target_cpu="ARM"
                 ;;
             *)
                 as_fn_error $? "\"Unknown CPU for Mingw32 -- $target_cpu\"" "$LINENO" 5
@@ -12268,6 +12293,21 @@ printf "%s\n" "release" >&6; }
         fi
         ;;
     esac
+elif test "$aros_toolchain" = "llvm" ; then
+    case "$aros_target_cpu" in
+    *arm*)
+        # clang accepts the modern <arm arch><features> form (armv7-a+fp/+nofp)
+        if test "$gcc_default_cpu" = ""; then
+            default_arm_cpu=armv7-a
+        else
+            default_arm_cpu=$gcc_default_cpu
+        fi
+        gcc_soft_cpu="$default_arm_cpu+nofp"
+        gcc_float_cpu="$default_arm_cpu+fp"
+
+
+        ;;
+    esac
 fi
 
 # Helper to identify llvm version
@@ -12765,6 +12805,14 @@ fi
 if test "$aros_host_cpu" == "x86_64" ; then
     if test "$aros_target_cpu" == "i386" ; then
         cross_compiling=no
+    fi
+fi
+
+if test "$aros_host_cpu" == "aarch64" ; then
+    if test "$aros_target_cpu" == "x86_64" ; then
+        if test "$aros_host_arch" == "darwin" ; then
+            cross_compiling=no
+        fi
     fi
 fi
 
@@ -19626,8 +19674,6 @@ if test "$use_libatomic" = "yes" ; then
     aros_cxx_libs="$aros_cxx_libs  -latomic"
 fi
 
-aros_target_options+="$export_newline""# Enable Nouveau Gfx Driver$export_newline""OPT_GFX_NOUVEAU               := no$export_newline"
-
 
 make_extra_commands="$make_extra_commands$export_newline""GENCTBL	:= $""(TOOLDIR)/genctbl$""(HOST_EXE_SUFFIX)$export_newline"
 
@@ -21514,5 +21560,4 @@ if test -n "$aros_shared_cflags" ; then
     echo "SHARED_CFLAGS := $aros_shared_cflags" >> ${aros_hostcfg_dir}/host.cfg
     echo "SHARED_AR := $aros_shared_ar" >> ${aros_hostcfg_dir}/host.cfg
 fi
-
 

@@ -2,7 +2,7 @@ dnl Copyright (C) 1997-2026, The AROS Development Team. All rights reserved.
 dnl $Id$
 dnl
 dnl Desc: Autoconf source for configuration file
-dnl Lang: english 
+dnl Lang: english
 
 # Note: After file changes, generate configure anew and commit _both_ files.
 
@@ -390,6 +390,9 @@ re-running configure])])
             default_android_sdk="/android-sdk-mac_x86"
         fi
         case "$host_cpu" in
+            *aarch64*|*arm64*)
+                aros_host_cpu="aarch64"
+                ;;
             *i?86*)
                 aros_host_cpu="i386"
                 ;;
@@ -458,7 +461,7 @@ re-running configure])])
                 AC_MSG_WARN("Unknown CPU for host -- $host_cpu")
                 aros_host_cpu="$host_cpu"
                 ;;
-        esac    
+        esac
         aros_host_lib_suffix=".0.0"
         ;;
 
@@ -476,7 +479,7 @@ re-running configure])])
                 ;;
         esac
         ;;
-        
+
     solaris*)
         aros_host_arch="solaris"
         aros_host_cflags="$aros_host_cflags $aros_host_cc_pipe"
@@ -934,9 +937,16 @@ case "$aros_toolchain" in
         toolchain_def_opt_lvl="-O2"
         toolchain_debug_opt_lvl="-O0"
         toolchain_size_opt_lvl="-Os"
-        aros_target_cflags="$""(CFLAGS_NO_INTEGRATED_AS)"
         aros_cxx_ldflags="-L$""(CROSSTOOLSDIR)/lib -stdlib=libc++ -static-libstdc++"
-        aros_config_aflags="$""(WARN_ALL) -no-integrated-as -x assembler-with-cpp -c"
+        if test "$aros_host_arch" = "darwin" ; then
+            dnl Darwin lacks a GNU-compatible external assembler, so use clang's
+            dnl integrated assembler instead of -no-integrated-as.
+            aros_target_cflags=""
+            aros_config_aflags="$""(WARN_ALL) -x assembler-with-cpp -c"
+        else
+            aros_target_cflags="$""(CFLAGS_NO_INTEGRATED_AS)"
+            aros_config_aflags="$""(WARN_ALL) -no-integrated-as -x assembler-with-cpp -c"
+        fi
         toolchain_ld_fmtbinary="--format=binary"
         aros_nowarn_flags="$aros_nowarn_flags NOWARN_IGNORED_OPTIMIZATION_ARGUMENT"
         ;;
@@ -1323,7 +1333,7 @@ case "$target_cpu" in
                 x86_64_isa_extra+="--target=x86_64-unknown-aros "
                 if test "$target_cpu" = "x86_64"; then
                     target_needs_collect32=yes
-                    aros_target32_cpu=i386
+                    aros_target_cpu32=i386
                 fi
             ;;
             *)
@@ -1413,7 +1423,7 @@ case "$target_os" in
                 pci_hidd_target="hidd-pci-linux"
                 llvm_target_cpu="X86"
 
-                # export flags/options needed to build 32bit 
+                # export flags/options needed to build 32bit
                 # components
                 aros_target_cpu32="i386"
                 target_isa_extra="TARGET_ISA_32_CFLAGS          = $""(ISA_32_FLAGS)$export_newline""TARGET_ISA_32_CXXFLAGS        = $""(ISA_32_FLAGS)$export_newline""TARGET_ISA_32_OBJCFLAGS       = $""(TARGET_ISA_32_CFLAGS)$export_newline""TARGET_ISA_32_AFLAGS          = $""(ISA_32_FLAGS)$export_newline""TARGET_ISA_32_LDFLAGS         = $""(ISA_32_FLAGS)$export_newline"
@@ -1482,7 +1492,7 @@ case "$target_os" in
                 android_tool_prefix="arm-linux-androideabi"
                 android_ndk_arch="arm"
                 kernel_tool_prefix="arm-linux-gnueabihf-"
-                llvm_target_cpu="Arm"
+                llvm_target_cpu="ARM"
                 ;;
             *arm*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
@@ -1504,7 +1514,7 @@ case "$target_os" in
                 android_tool_prefix="arm-linux-androideabi"
                 android_ndk_arch="arm"
                 kernel_tool_prefix="arm-linux-gnueabi-"
-                llvm_target_cpu="Arm"
+                llvm_target_cpu="ARM"
                 ;;
             *)
                 AC_MSG_ERROR("Unknown CPU for Linux -- $target_cpu")
@@ -1527,7 +1537,7 @@ case "$target_os" in
                     CFLAGS="-mandroid"
                 else
                     dnl In Android NDK toolchains are placed in own directories,
-                    dnl but tool names are not suffixed with version 
+                    dnl but tool names are not suffixed with version
                     export PATH="$aros_android_ndk/toolchains/$android_tool_dir_prefix-$kernel_tool_version/prebuilt/$android_build_os/bin:$PATH"
                     kernel_tool_version=""
                     aros_android_ndk="$aros_android_ndk/platforms/android-$aros_ndk_version/arch-$android_ndk_arch"
@@ -1608,7 +1618,7 @@ case "$target_os" in
                 esac
                 llvm_target_cpu="X86"
 
-                # export flags/options needed to build 32bit 
+                # export flags/options needed to build 32bit
                 # components
                 aros_target_cpu32="i386"
                 target_isa_extra="TARGET_ISA_32_CFLAGS          = $""(ISA_32_FLAGS)$export_newline""TARGET_ISA_32_CXXFLAGS        = $""(ISA_32_FLAGS)$export_newline""TARGET_ISA_32_OBJCFLAGS       = $""(TARGET_ISA_32_CFLAGS)$export_newline""TARGET_ISA_32_AFLAGS          = $""(ISA_32_FLAGS)$export_newline""TARGET_ISA_32_LDFLAGS         = $""(ISA_32_FLAGS)$export_newline"
@@ -1692,22 +1702,34 @@ case "$target_os" in
                 aros_target_cpu="x86_64"
                 aros_object_format="elf_x86_64"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64"
-                aros_isa_flags="$""(ISA_X8664_FLAGS)"
+                aros_isa_flags="$""(ISA_X8664_FLAGS))$export_newline""ISA_32_FLAGS                  = $""(strip $""(ISA_X86_FLAGS)"
                 aros_macosx_version="10.6"
                 aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_OMIT_FP)"
                 aros_config_cxxflags="$aros_config_cxxflags $""(CFLAGS_NO_OMIT_FP)"
-                aros_kernel_isa_flags="-m64"
-                aros_kernel_ldflags="-m64"
+                if test "$aros_host_cpu" = "aarch64" ; then
+                    aros_kernel_isa_flags="-arch x86_64"
+                    aros_kernel_ldflags="-arch x86_64"
+                else
+                    aros_kernel_isa_flags="-m64"
+                    aros_kernel_ldflags="-m64"
+                fi
                 aros_nominal_depth=8
                 aros_kernel_rs="$toolchain_ar"
                 aros_kernel_ar_flags="-cr"
                 aros_kernel_ld="$toolchain_ld"
                 aros_kernel_as="$toolchain_as"
-                aros_kernel_ranlib="$toolchain_ranlib"
-                aros_kernel_nm="$toolchain_nm"
+                aros_kernel_ranlib="ranlib"
+                aros_kernel_nm="nm"
                 aros_kernel_strip="strip"
                 kernel_tool_prefix="i686-apple-darwin10-"
                 llvm_target_cpu="X86"
+                aros_target_cpu32="i386"
+                target_isa_extra="TARGET_ISA_32_CFLAGS          = $""(ISA_32_FLAGS)$export_newline""TARGET_ISA_32_CXXFLAGS        = $""(ISA_32_FLAGS)$export_newline""TARGET_ISA_32_OBJCFLAGS       = $""(TARGET_ISA_32_CFLAGS)$export_newline""TARGET_ISA_32_AFLAGS          = $""(ISA_32_FLAGS)$export_newline""TARGET_ISA_32_LDFLAGS         = $""(ISA_32_FLAGS)$export_newline"
+                case "$aros_toolchain" in
+                    *llvm*)
+                        target_link_extra="TARGET_32_C_LIBS              = $""(strip -L$""(CROSSTOOLSDIR)/lib/generic -lclang_rt.builtins-$""(AROS_TARGET_CPU32))$export_newline"
+                        ;;
+                esac
                 ;;
             *ppc*)
                 aros_target_cpu="ppc"
@@ -1721,8 +1743,8 @@ case "$target_os" in
                 aros_kernel_ar_flags="-cr"
                 aros_kernel_ld="$toolchain_ld -arch ppc"
                 aros_kernel_as="$toolchain_as -arch ppc"
-                aros_kernel_ranlib="$toolchain_ranlib -arch ppc"
-                aros_kernel_nm="$toolchain_nm -arch ppc"
+                aros_kernel_ranlib="ranlib -arch ppc"
+                aros_kernel_nm="nm -arch ppc"
                 aros_kernel_strip="strip -arch ppc"
                 kernel_tool_prefix="powerpc-apple-darwin10-"
                 llvm_target_cpu="PowerPC"
@@ -1739,10 +1761,10 @@ case "$target_os" in
                 aros_kernel_rs="$toolchain_ar"
                 aros_kernel_ar_flags="-cr"
                 aros_kernel_ld="$toolchain_ld -arch arm"
-                aros_kernel_ranlib="$toolchain_ranlib -arch arm"
-                kernel_tool_prefix="arm-apple-darwin10-" 
+                aros_kernel_ranlib="ranlib -arch arm"
+                kernel_tool_prefix="arm-apple-darwin10-"
                 export PATH="$aros_xcode_path/Platforms/$aros_ios_platform.platform/Developer/usr/bin:$PATH"
-                llvm_target_cpu="Arm"
+                llvm_target_cpu="ARM"
                 ;;
             *)
                 AC_MSG_ERROR("Unsupported target CPU for darwin hosted flavour -- $target_cpu")
@@ -1846,7 +1868,7 @@ case "$target_os" in
         aros_target_genmap="-Wl,-M -Xlinker >"
         aros_flavour="emulation"
         aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
-        ;;   
+        ;;
 
     openbsd*)
         HOST_WANTS_X11=yes
@@ -1963,7 +1985,7 @@ case "$target_os" in
 
                 target_cpu=arm
                 aros_target_cpu=arm
-                llvm_target_cpu="Arm"
+                llvm_target_cpu="ARM"
                 ;;
             *arm*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
@@ -1971,14 +1993,14 @@ case "$target_os" in
                 gcc_float_fpu="vfpv3"
                 gcc_soft_fpu=
                 gcc_default_fpu=
-                llvm_target_cpu="Arm"
+                llvm_target_cpu="ARM"
                 ;;
             *)
                 AC_MSG_ERROR("Unknown CPU for EfikaMX $target_cpu")
                 ;;
         esac
         ;;
-        
+
     chrp)
         aros_target_arch="chrp"
         aros_shared_default="no"
@@ -2010,7 +2032,14 @@ case "$target_os" in
         aros_shared_default="no"
 
         aros_target_mkdep="$aros_target_mkdep -D__GNUC__"
-        
+
+        aros_kernel_toolchain=$aros_toolchain
+        kernel_toolchain_c_compiler=$toolchain_c_compiler
+        kernel_toolchain_cxx_compiler=$toolchain_cxx_compiler
+        if test "$aros_kernel_toolchain" = "llvm"; then
+            aros_kernel_llvmwrapper=yes
+        fi
+
         case "$target_cpu" in
             *aarch64*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
@@ -2023,20 +2052,16 @@ case "$target_os" in
                 ;;
             *armhf*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
-                # we intentionaly leave
-                # gcc_default_cpu empty here
-                # so the correct value is loaded
-                # later.
                 if test "$aros_object_format" = "" ; then
                     aros_object_format="armelf_aros"
                 fi
                 aros_target_cpu="arm"
                 target_cpu="armhf"
-                
-                gcc_float_fpu="vfpv3-d16"
+
+                gcc_float_fpu="neon-vfpv4"
                 gcc_soft_fpu=$gcc_float_fpu
                 gcc_default_fpu="$""(GCC_FLOAT_FPU)"
-                llvm_target_cpu="Arm"
+                llvm_target_cpu="ARM"
 
                 aros_isa_flags="$""(ISA_ARM_FLAGS)"
                 aros_config_cflags="$aros_config_cflags"
@@ -2057,10 +2082,10 @@ case "$target_os" in
                 fi
                 aros_target_cpu="arm"
 
-                gcc_float_fpu="vfpv3-d16"
+                gcc_float_fpu="neon-vfpv4"
                 gcc_soft_fpu=""
                 gcc_default_fpu=
-                llvm_target_cpu="Arm"
+                llvm_target_cpu="ARM"
 
                 aros_isa_flags="$""(ISA_ARM_FLAGS)"
                 aros_config_cflags="$aros_config_cflags"
@@ -2132,7 +2157,7 @@ case "$target_os" in
         gcc_float_fpu="fpv5-sp-d16"
         gcc_soft_fpu=$gcc_float_fpu
         gcc_default_fpu="$""(GCC_FLOAT_FPU)"
-        llvm_target_cpu="Arm"
+        llvm_target_cpu="ARM"
 
         aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dthumb"
         ;;
@@ -2271,7 +2296,7 @@ case "$target_os" in
                 kernel_tool_prefix="arm-mingw32ce-"
                 aros_nominal_width=160
                 aros_nominal_height=160
-                llvm_target_cpu="Arm"
+                llvm_target_cpu="ARM"
                 ;;
             *)
                 AC_MSG_ERROR("Unknown CPU for Mingw32 -- $target_cpu")
@@ -2613,6 +2638,21 @@ if test "$aros_toolchain" = "gnu" ; then
         fi
         ;;
     esac
+elif test "$aros_toolchain" = "llvm" ; then
+    case "$aros_target_cpu" in
+    *arm*)
+        # clang accepts the modern <arm arch><features> form (armv7-a+fp/+nofp)
+        if test "$gcc_default_cpu" = ""; then
+            default_arm_cpu=armv7-a
+        else
+            default_arm_cpu=$gcc_default_cpu
+        fi
+        gcc_soft_cpu="$default_arm_cpu+nofp"
+        gcc_float_cpu="$default_arm_cpu+fp"
+        AC_SUBST([gcc_soft_cpu])
+        AC_SUBST([gcc_float_cpu])
+        ;;
+    esac
 fi
 
 # Helper to identify llvm version
@@ -2695,7 +2735,7 @@ case "$aros_target_cpu" in
         aros_isa_extra="$aros_isa_extra$m68k_020_cflags$export_newline$m68k_030_cflags$export_newline$m68k_040_cflags$export_newline$m68k_060_cflags$export_newline"
         aros_isa_extra="$aros_isa_extra$m68k_020_ldflags$export_newline$m68k_030_ldflags$export_newline$m68k_040_ldflags$export_newline$m68k_060_ldflags$export_newline"
         aros_isa_extra="$aros_isa_extra$m68k_020_ext$export_newline$m68k_030_ext$export_newline$m68k_040_ext$export_newline$m68k_060_ext$export_newline"
-        
+
         AC_MSG_CHECKING([which minimum CPU to use])
         AC_ARG_WITH(cpu,AS_HELP_STRING([--with-cpu=<spec>],[Specify minumum CPU (default=$gcc_default_cpu).]),aros_gcc_cpu="$withval",aros_gcc_cpu=)
         if test "$aros_gcc_cpu" = ""; then
@@ -2870,7 +2910,7 @@ case "$aros_target_cpu" in
         ;;
     i386)
         aros_isa_extra="$x86_isa_extra$export_newline$x86_64_isa_extra$export_newline"
-        aros_kernel_ldflags="$aros_kernel_ldflags -m32" 
+        aros_kernel_ldflags="$aros_kernel_ldflags -m32"
         ;;
     riscv)
         aros_isa_extra="$riscv_isa_extra$export_newline"
@@ -2951,6 +2991,15 @@ if test "$aros_host_cpu" == "x86_64" ; then
     fi
 fi
 
+dnl Apple Clang on arm64 macOS can produce x86_64 binaries via -arch x86_64.
+if test "$aros_host_cpu" == "aarch64" ; then
+    if test "$aros_target_cpu" == "x86_64" ; then
+        if test "$aros_host_arch" == "darwin" ; then
+            cross_compiling=no
+        fi
+    fi
+fi
+
 if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" ; then
     dnl For a hosted build we are cross-compiling if host OS differs from build OS.
     dnl TODO: This might get a little bit more tricky if we ever cross-compile ARM-Android-hosted
@@ -2960,7 +3009,7 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
     dnl For us Android is not a separate OS, but a variant of Linux, so both systems will be
     dnl identified as 'linux'. If this ever involves, we'll have to implement some additional check,
     dnl perhaps introducing aros_host_variant
-    
+
     if test "$aros_host_arch" != "$aros_target_arch" ; then
         cross_compiling=yes
     fi
@@ -3054,7 +3103,7 @@ else
         # Kernel tools required - find them
         # Note that 'normally', aros_kernel_* overrides will be
         # empty, unless specified in the per-arch sections above.
-        
+
         AC_MSG_NOTICE([Checking kernel tools])
 
         test_kernel_cc=yes
@@ -3229,7 +3278,7 @@ if test "$kernel_tool_prefix" = "none" ; then
     fi
 fi
 
-# At this point, all aros_kernel_* and aros_target_* 
+# At this point, all aros_kernel_* and aros_target_*
 # tools should be set up correctly
 
 CC="$aros_kernel_cc $kernel_tool_flags"
@@ -3427,7 +3476,7 @@ if test "x$test_kernel_cc" != "xno"; then
                         ! test -d $dir && mkdir -p $dir
                         ! test -f $dir/$h && { cp $d $dir; chmod u+w $dir/$h; }
                     done
-                done            
+                done
             fi
         fi
         AC_MSG_RESULT($aros_kernel_cc_includes)
@@ -3451,7 +3500,7 @@ if test "$crosstools" != "yes"; then
         if ! test -d $aros_target_cc_includes; then
             #the directory doesn't exist, we need to do some more work
             aros_target_cc_includes=${PWD}/${aros_gendir}/cc_include
-        
+
             #these are the headers we're looking for
             headers="limits.h mmintrin.h stdbool.h syslimits.h float.h \
                     stddef.h xmmintrin.h iso646.h stdarg.h unwind.h   \
@@ -3463,7 +3512,7 @@ if test "$crosstools" != "yes"; then
                 deps=$(echo "#include <$h>" | \
                     $orig_target_cc -E -M - 2>/dev/null | \
                     sed 's/^.*://; s/\\$/ /g; s/[[ \t]]\+/ /g')
-            
+
                 #copy all the needed headers to a directory beneath gendir
                 for d in $deps; do
                     h=$(basename $d)
@@ -3649,7 +3698,7 @@ if test "$aros_enable_mmu" = "no" ; then
 else
     aros_enable_mmu="1"
 fi
-    
+
 
 dnl things specifically required for hosted flavours
 if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" ; then
@@ -3710,7 +3759,7 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
                 dnl and they explicitly asked for it, bail out
                 AC_MSG_ERROR([X11 libs/headers not found, cannot build X11 hidd as requested])
             fi
-        
+
         else
             dnl found it, setup the metatarget
             aros_target_options+="$export_newline""# Enable X11 Gfx Driver$export_newline""OPT_HOST_X11GFX               := yes$export_newline"
@@ -3728,7 +3777,7 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
                         x_libraries="/usr/X11/lib"
                     fi
                 ;;
-            esac      
+            esac
 
             if test -n "$x_includes"; then
                 X_CFLAGS="$X_CFLAGS -I$x_includes"
@@ -3785,7 +3834,7 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
                 DO_XSHM_SUPPORT="0"
             fi
 
-            
+
             dnl setup vidmode (fullscreen) extensions
             AC_ARG_ENABLE(x11_vidmode, AS_HELP_STRING([--enable-x11-vidmode],[use X11 vidmode extension (default=auto)]),
                                                       x11_hidd_vidmode="$enableval",
@@ -4013,8 +4062,6 @@ fi
 if test "$use_libatomic" = "yes" ; then
     aros_cxx_libs="$aros_cxx_libs  -latomic"
 fi
-
-aros_target_options+="$export_newline""# Enable Nouveau Gfx Driver$export_newline""OPT_GFX_NOUVEAU               := no$export_newline"
 
 dnl --------------------------------------------------------------------
 dnl Configuration Output Section
@@ -4432,7 +4479,7 @@ if test "x$target_needs_collect32" = "xyes"; then
   ],
   [AROS_TARGET32_CPU=$aros_target_cpu32
    AROS_HOST_GENDIR=$aros_host_gendir])
-   
+
    aros_collect32_target="$""(COLLECT-AROS32)"
    AC_SUBST(aros_collect32_target)
 fi
@@ -4602,4 +4649,3 @@ if test -n "$aros_shared_cflags" ; then
     echo "SHARED_CFLAGS := $aros_shared_cflags" >> ${aros_hostcfg_dir}/host.cfg
     echo "SHARED_AR := $aros_shared_ar" >> ${aros_hostcfg_dir}/host.cfg
 fi
-

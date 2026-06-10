@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1982, 1986, 1993, 1994
+ * Copyright (C) 1982, 1986, 1993, 1994
  *	The Regents of the University of California.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -41,6 +41,40 @@
  */
 
 /*
+ * Maximum number of SACK blocks we track per connection (RFC 2018).
+ * FreeBSD uses 6; we use 4 to keep the structure compact.
+ */
+#define MAX_SACK_BLKS	4
+
+struct sackblk {
+	tcp_seq	start;		/* left edge (first unacknowledged byte) */
+	tcp_seq	end;		/* right edge (next byte after SACK'd data) */
+};
+
+/*
+ * Congestion control algorithm identifiers.
+ */
+#define TCP_CC_NEWRENO  0
+#define TCP_CC_CUBIC    1
+
+/*
+ * CUBIC congestion control state (RFC 8312).
+ * Embedded in struct tcpcb for each connection using CUBIC.
+ */
+struct cubic_state {
+	u_long  wmax;           /* W_max: cwnd at last loss event (bytes) */
+	u_long  epoch_start;    /* tcp_now at start of current epoch */
+	u_long  origin_point;   /* W_max at epoch start for cubic fn */
+	u_long  k;              /* time to reach W_max (ticks) */
+	u_long  tcp_cwnd;       /* last computed CUBIC target cwnd */
+	u_long  w_est;          /* TCP-friendly estimated cwnd (bytes) */
+	u_long  ack_cnt;        /* bytes ACKed since last cwnd increase */
+	u_short flags;          /* cubic-specific flags */
+#define CUBIC_FLAG_RESET    0x0001
+#define CUBIC_FLAG_FRIENDLY 0x0002
+};
+
+/*
  * Tcp control block, one per tcp; fields:
  */
 struct tcpcb {
@@ -70,6 +104,14 @@ struct tcpcb {
 #define TF_REQ_CC	0x2000		/* have/will request CC */
 #define	TF_RCVD_CC	0x4000		/* a CC was received in SYN */
 
+/* Extended flags (t_flagsext) */
+#define TF_NEWRENO	0x0001		/* use NewReno fast recovery */
+#define TF_IN_FASTRECOV	0x0002		/* currently in fast recovery */
+#define TF_ECN_PERMIT	0x0004		/* ECN negotiated on connection */
+#define TF_ECN_SND_CWR	0x0008		/* need to send CWR */
+#define TF_ECN_SND_ECE	0x0010		/* need to send ECE */
+#define TF_SACK_GENERATE 0x0020		/* need to generate SACK option */
+
 	struct	tcpiphdr *t_template;	/* skeletal packet for transmit */
 	struct	inpcb *t_inpcb;		/* back pointer to internet pcb */
 /*
@@ -85,6 +127,14 @@ struct tcpcb {
 	tcp_seq	iss;			/* initial send sequence number */
 	u_long	snd_wnd;		/* send window */
 	tcp_seq	snd_recover;		/* for use in NewReno Fast Recovery */
+/* NewReno / SACK / ECN state */
+	u_short	t_flagsext;		/* extended flags (TF_NEWRENO etc.) */
+	u_short	t_num_sack_blks;	/* number of valid SACK blocks */
+	struct sackblk t_sack_blks[MAX_SACK_BLKS]; /* received SACK blocks */
+	struct sackblk t_dsack_blks[MAX_SACK_BLKS]; /* SACK blocks to send */
+	u_short	t_num_dsack_blks;	/* number of SACK blocks to send */
+	tcp_seq	snd_fack;		/* forward ACK - highest SACKed seq */
+	u_long	snd_awnd;		/* adjusted cwnd during SACK recovery */
 /* receive sequence variables */
 	u_long	rcv_wnd;		/* receive window */
 	tcp_seq	rcv_nxt;		/* receive next */
@@ -137,6 +187,10 @@ struct tcpcb {
 	tcp_cc	cc_recv;		/* receive connection count */
 	u_long	t_duration;		/* connection duration */
 
+/* Congestion control algorithm state */
+	u_char	t_cc_algo;		/* CC algorithm (TCP_CC_NEWRENO/CUBIC) */
+	struct	cubic_state t_cubic;	/* CUBIC algorithm state (RFC 8312) */
+
 /* TUBA stuff */
 	caddr_t	t_tuba_pcb;		/* next level down pcb for TCP over z */
 };
@@ -153,10 +207,14 @@ struct tcpopt {
 #define TOF_CC		0x0002		/* CC and CCnew are exclusive */
 #define TOF_CCNEW	0x0004
 #define	TOF_CCECHO	0x0008
+#define TOF_SACK_PERMITTED 0x0010	/* SACK permitted (SYN only) */
+#define TOF_SACK	0x0020		/* SACK block(s) present */
 	u_int32_t	to_tsval;
 	u_int32_t	to_tsecr;
 	tcp_cc	to_cc;		/* holds CC or CCnew */
 	tcp_cc	to_ccecho;
+	int		to_nsacks;		/* number of SACK blocks */
+	struct sackblk	to_sacks[MAX_SACK_BLKS]; /* parsed SACK blocks */
 };
 
 /*
@@ -277,6 +335,18 @@ struct	tcpstat {
 	u_long	tcps_predack;		/* times hdr predict ok for acks */
 	u_long	tcps_preddat;		/* times hdr predict ok for data pkts */
 	u_long	tcps_pcbcachemiss;
+/* SACK / NewReno / ECN statistics */
+	u_long	tcps_sack_recovery;	/* times SACK recovery entered */
+	u_long	tcps_sack_rexmits;	/* SACK retransmits sent */
+	u_long	tcps_sack_rexmit_bytes;	/* SACK retransmit bytes */
+	u_long	tcps_newreno_partial;	/* NewReno partial ACKs */
+	u_long	tcps_ecn_ce;		/* ECN CE packets received */
+	u_long	tcps_ecn_ece;		/* ECN ECE flags sent */
+	u_long	tcps_ecn_cwr;		/* ECN CWR flags sent */
+/* SYN cookie statistics */
+	u_long	tcps_sc_sendcookie;	/* SYN cookies sent */
+	u_long	tcps_sc_recvcookie;	/* SYN cookies validated */
+	u_long	tcps_sc_badcookie;	/* SYN cookies failed validation */
 };
 
 /*
@@ -316,6 +386,9 @@ extern	int tcp_mssdflt;	/* XXX */
 extern	u_long tcp_now;		/* for RFC 1323 timestamps */
 extern	int tcp_rttdflt;	/* XXX */
 extern  u_short tcp_lastport;	/* last assigned port */
+extern	int tcp_do_sack;	/* enable SACK (RFC 2018) */
+extern	int tcp_do_newreno;	/* enable NewReno (RFC 3782) */
+extern	int tcp_do_ecn;		/* enable ECN (RFC 3168) */
 
 int	 tcp_attach __P((struct socket *));
 void	 tcp_canceltimers __P((struct tcpcb *));

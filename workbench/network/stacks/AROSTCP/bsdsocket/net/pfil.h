@@ -2,8 +2,9 @@
 /*	$NetBSD: pfil.h,v 1.22 2003/06/23 12:57:08 martin Exp $	*/
 
 /*-
- * Copyright (c) 1996 Matthew R. Green
- * Copyright (c) 2005 - 2006 Pavel Fedin
+ * Copyright (C) 1996 Matthew R. Green
+ * Copyright (C) 2005-2006 Pavel Fedin
+ * Copyright (C) 2005-2026, The AROS Development Team.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,6 +34,8 @@
 #ifndef _NET_PFIL_H_
 #define _NET_PFIL_H_
 
+#ifdef ENABLE_PACKET_FILTER
+
 #include <sys/systm.h>
 #include <sys/queue.h>
 
@@ -52,7 +55,14 @@ struct packet_filter_hook {
 
 
 void	pfil_init(void);
-void	pfil_run_hooks(struct mbuf *, struct ifnet *, unsigned char);
-                            
+int	pfil_run_hooks(struct mbuf *, struct ifnet *, unsigned char, int);
+
+#else /* !ENABLE_PACKET_FILTER */
+
+#define pfil_init()                          do { } while (0)
+#define pfil_run_hooks(m, ifp, pr, dir)      0
+
+#endif /* ENABLE_PACKET_FILTER */
+
 #endif /* _NET_PFIL_H_ */
 

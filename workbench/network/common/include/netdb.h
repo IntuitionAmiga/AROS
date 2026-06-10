@@ -3,7 +3,8 @@
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
  * Copyright (C) 2005 Neil Cafferkey
- * Copyright (C) 2005 - 2011 Pavel Fedin
+ * Copyright (C) 2005-2011 Pavel Fedin
+ * Copyright (C) 2005-2026, The AROS Development Team.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Library General Public License
@@ -22,7 +23,7 @@
  */
 
 /*-
- * Copyright (c) 1980, 1983, 1988 Regents of the University of California.
+ * Copyright (C) 1980, 1983, 1988 Regents of the University of California.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms are permitted
@@ -117,6 +118,9 @@ static inline int *__get_h_errno_ptr(struct Library *SocketBase)
 #define	NO_DATA		4 /* Valid name, no data record of requested type */
 #define	NO_ADDRESS	NO_DATA		/* no address, look for MX record */
 
+#define	NETDB_INTERNAL	-1 /* see errno */
+#define	NETDB_SUCCESS	0  /* no problem */
+
 struct addrinfo {
   long		ai_flags;		/* AI_PASSIVE, AI_CANONNAME */
   long		ai_family;		/* PF_xxx */
@@ -131,6 +135,9 @@ struct addrinfo {
 			/* following for getaddrinfo() */
 #define	AI_PASSIVE	1      /* socket is intended for bind() + listen() */
 #define	AI_CANONNAME	2      /* return canonical name */
+#define	AI_NUMERICHOST	4      /* hostname is a numeric address string */
+#define	AI_NUMERICSERV	8      /* service name is a numeric port string */
+#define	AI_ADDRCONFIG	0x0400 /* only return addresses configured on host */
 
 			/* following for getnameinfo() */
 #define	NI_MAXHOST	  1025	/* max hostname returned */

@@ -2,7 +2,7 @@
 #define DEFINES_BSDSOCKET_PROTOS_H
 
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 2005-2026, The AROS Development Team. All rights reserved.
 */
 
 /*
@@ -13,6 +13,14 @@
 #include <exec/types.h>
 #include <aros/preprocessor/variadic/cast2iptr.hpp>
 
+
+#if defined(__CONFIG_ROADSHOW__)
+#define BSDSOCKET_ROADSHOW_BPF
+#define BSDSOCKET_ROADSHOW_ROUTING
+#define BSDSOCKET_ROADSHOW_IFCFG
+#define BSDSOCKET_ROADSHOW_NETMON
+#define BSDSOCKET_ROADSHOW_DNS
+#endif
 
 #define __socket_WB(__SocketBase, __arg1, __arg2, __arg3) \
         AROS_LC3(int, socket, \
@@ -27,7 +35,7 @@
 #define __bind_WB(__SocketBase, __arg1, __arg2, __arg3) \
         AROS_LC3(int, bind, \
                   AROS_LCA(int,(__arg1),D0), \
-                  AROS_LCA(struct sockaddr *,(__arg2),A0), \
+                  AROS_LCA(const struct sockaddr *,(__arg2),A0), \
                   AROS_LCA(socklen_t,(__arg3),D1), \
         struct Library *, (__SocketBase), 6, BSDSocket)
 
@@ -58,7 +66,7 @@
 #define __connect_WB(__SocketBase, __arg1, __arg2, __arg3) \
         AROS_LC3(int, connect, \
                   AROS_LCA(int,(__arg1),D0), \
-                  AROS_LCA(struct sockaddr *,(__arg2),A0), \
+                  AROS_LCA(const struct sockaddr *,(__arg2),A0), \
                   AROS_LCA(socklen_t,(__arg3),D1), \
         struct Library *, (__SocketBase), 9, BSDSocket)
 
@@ -137,7 +145,7 @@
                   AROS_LCA(int,(__arg1),D0), \
                   AROS_LCA(int,(__arg2),D1), \
                   AROS_LCA(int,(__arg3),D2), \
-                  AROS_LCA(void *,(__arg4),A0), \
+                  AROS_LCA(const void *,(__arg4),A0), \
                   AROS_LCA(socklen_t,(__arg5),D3), \
         struct Library *, (__SocketBase), 15, BSDSocket)
 
@@ -342,7 +350,7 @@
 
 #define __getnetbyname_WB(__SocketBase, __arg1) \
         AROS_LC1(struct netent *, getnetbyname, \
-                  AROS_LCA(char *,(__arg1),A0), \
+                  AROS_LCA(const char *,(__arg1),A0), \
         struct Library *, (__SocketBase), 37, BSDSocket)
 
 #define getnetbyname(arg1) \
@@ -359,8 +367,8 @@
 
 #define __getservbyname_WB(__SocketBase, __arg1, __arg2) \
         AROS_LC2(struct servent *, getservbyname, \
-                  AROS_LCA(char *,(__arg1),A0), \
-                  AROS_LCA(char *,(__arg2),A1), \
+                  AROS_LCA(const char *,(__arg1),A0), \
+                  AROS_LCA(const char *,(__arg2),A1), \
         struct Library *, (__SocketBase), 39, BSDSocket)
 
 #define getservbyname(arg1, arg2) \
@@ -369,7 +377,7 @@
 #define __getservbyport_WB(__SocketBase, __arg1, __arg2) \
         AROS_LC2(struct servent *, getservbyport, \
                   AROS_LCA(int,(__arg1),D0), \
-                  AROS_LCA(char *,(__arg2),A0), \
+                  AROS_LCA(const char *,(__arg2),A0), \
         struct Library *, (__SocketBase), 40, BSDSocket)
 
 #define getservbyport(arg1, arg2) \
@@ -377,7 +385,7 @@
 
 #define __getprotobyname_WB(__SocketBase, __arg1) \
         AROS_LC1(struct protoent *, getprotobyname, \
-                  AROS_LCA(char *,(__arg1),A0), \
+                  AROS_LCA(const char *,(__arg1),A0), \
         struct Library *, (__SocketBase), 41, BSDSocket)
 
 #define getprotobyname(arg1) \
@@ -484,10 +492,8 @@
 #define GetSocketEvents(arg1) \
     __GetSocketEvents_WB(SocketBase, (arg1))
 
-#if defined(__CONFIG_ROADSHOW__)
-
 /* RoadShow Extensions .. */
-
+#if defined(BSDSOCKET_ROADSHOW_BPF)
 #define __bpf_open_WB(__SocketBase, __arg1) \
         AROS_LC1(long, bpf_open, \
                   AROS_LCA(long, (__arg1), D0), \
@@ -517,7 +523,7 @@
 #define __bpf_write_WB(__SocketBase, __arg1, __arg2, __arg3) \
         AROS_LC3(long, bpf_write, \
                   AROS_LCA(long, (__arg1), D0), \
-                  AROS_LCA(void *, (__arg2), A0), \
+                  AROS_LCA(const void *, (__arg2), A0), \
                   AROS_LCA(long, (__arg3), D1), \
         struct Library *, (__SocketBase), 64, BSDSocket)
 
@@ -559,7 +565,8 @@
 
 #define bpf_data_waiting(arg1) \
     __bpf_data_waiting_WB(SocketBase, arg1)
-
+#endif
+#if defined(BSDSOCKET_ROADSHOW_ROUTING)
 #define __AddRouteTagList_WB(__SocketBase, __arg1) \
         AROS_LC1(long, AddRouteTagList, \
                   AROS_LCA(struct TagItem *, (__arg1), A0), \
@@ -600,7 +607,8 @@
 
 #define GetRouteInfo(arg1, arg2) \
     __GetRouteInfo_WB(SocketBase, arg1, arg2)
-
+#endif
+#if defined(BSDSOCKET_ROADSHOW_IFCFG)
 #define __AddInterfaceTagList_WB(__SocketBase, __arg1, __arg2, __arg3, __arg4) \
         AROS_LC4(long, AddInterfaceTagList, \
                   AROS_LCA(STRPTR, (__arg1), A0), \
@@ -680,7 +688,8 @@
 
 #define AbortInterfaceConfig(arg1) \
     __AbortInterfaceConfig_WB(SocketBase, arg1)
-
+#endif
+#if defined(BSDSOCKET_ROADSHOW_NETMON)
 #define __AddNetMonitorHookTagList_WB(__SocketBase, __arg1, __arg2, __arg3) \
         AROS_LC3(long, AddNetMonitorHookTagList, \
                   AROS_LCA(long, (__arg1), D0), \
@@ -709,7 +718,8 @@
 
 #define GetNetworkStatistics(arg1, arg2, arg3, arg4) \
     __GetNetworkStatistics_WB(SocketBase, arg1, arg2, arg3, arg4)
-
+#endif
+#if defined(BSDSOCKET_ROADSHOW_DNS)
 #define __AddDomainNameServer_WB(__SocketBase, __arg1) \
         AROS_LC1(LONG, AddDomainNameServer, \
                   AROS_LCA(STRPTR, (__arg1), A0), \
@@ -740,7 +750,8 @@
 
 #define ObtainDomainNameServerList() \
     __ObtainDomainNameServerList_WB(SocketBase)
-
+#endif
+#if defined(__CONFIG_ROADSHOW__)
 #define __setnetent_WB(__SocketBase, __arg1) \
         AROS_LC1NR(void, setnetent, \
                   AROS_LCA(int, (__arg1), D0), \
@@ -815,6 +826,32 @@
 
 #define inet_aton(arg1, arg2) \
     __inet_aton_WB(SocketBase, (arg1), (arg2))
+
+#define __gethostbyname_r_WB(__SocketBase, __arg1, __arg2, __arg3, __arg4, __arg5) \
+        AROS_LC5(struct hostent *, RS_gethostbyname_r, \
+                  AROS_LCA(const char *,(__arg1),A0), \
+                  AROS_LCA(struct hostent *,(__arg2),A1), \
+                  AROS_LCA(char *,(__arg3),A2), \
+                  AROS_LCA(LONG,(__arg4),D0), \
+                  AROS_LCA(LONG *,(__arg5),A3), \
+        struct Library *, (__SocketBase), 123, BSDSocket)
+
+#define gethostbyname_r(arg1, arg2, arg3, arg4, arg5) \
+    __gethostbyname_r_WB(SocketBase, (arg1), (arg2), (arg3), (arg4), (arg5))
+
+#define __gethostbyaddr_r_WB(__SocketBase, __arg1, __arg2, __arg3, __arg4, __arg5, __arg6, __arg7) \
+        AROS_LC7(struct hostent *, RS_gethostbyaddr_r, \
+                  AROS_LCA(const char *,(__arg1),A0), \
+                  AROS_LCA(LONG,(__arg2),D0), \
+                  AROS_LCA(LONG,(__arg3),D1), \
+                  AROS_LCA(struct hostent *,(__arg4),A1), \
+                  AROS_LCA(char *,(__arg5),A2), \
+                  AROS_LCA(LONG,(__arg6),D2), \
+                  AROS_LCA(LONG *,(__arg7),A3), \
+        struct Library *, (__SocketBase), 124, BSDSocket)
+
+#define gethostbyaddr_r(arg1, arg2, arg3, arg4, arg5, arg6, arg7) \
+    __gethostbyaddr_r_WB(SocketBase, (arg1), (arg2), (arg3), (arg4), (arg5), (arg6), (arg7))
 
 #endif /* __CONFIG_ROADSHOW__ */
 

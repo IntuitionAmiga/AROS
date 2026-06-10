@@ -1,10 +1,11 @@
 /*	$KAME: if_nameindex.c,v 1.0 2005/11/14 16:49:01 sonic Exp $	*/
 
 /*-
- * Copyright (c) 1997, 2000
+ * Copyright (C) 1997, 2000
  *	Berkeley Software Design, Inc.  All rights reserved.
- * Copyright (c) 2005 - 2006
+ * Copyright (C) 2005 - 2006
  *	Pavel Fedin
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -84,81 +85,85 @@
 
 AROS_LH0(struct if_nameindex *, if_nameindex,
          struct MiamiBase *, MiamiBase, 48, Miami
-)
+        )
 {
-	AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-	struct ifaddrs *ifaddrs, *ifa;
-	unsigned int ni;
-	int nbytes;
-	struct if_nameindex *ifni, *ifni2;
-	char *cp;
+    struct ifaddrs *ifaddrs, *ifa;
+    unsigned int ni;
+    int nbytes;
+    struct if_nameindex *ifni, *ifni2;
+    char *cp;
 
-	if (getifaddrs(&ifaddrs, MiamiBase->_SocketBase) < 0)
-		return(NULL);
+    if(getifaddrs(&ifaddrs, MiamiBase->_SocketBase) < 0)
+        return(NULL);
 
-	/*
-	 * First, find out how many interfaces there are, and how
-	 * much space we need for the string names.
-	 */
-	ni = 0;
-	nbytes = 0;
-	for (ifa = ifaddrs; ifa != NULL; ifa = ifa->ifa_next) {
-		if (ifa->ifa_addr &&
-		    ifa->ifa_addr->sa_family == AF_LINK) {
-			nbytes += strlen(ifa->ifa_name) + 1;
-			ni++;
-		}
-	}
+    /*
+     * First, find out how many interfaces there are, and how
+     * much space we need for the string names.
+     */
+    ni = 0;
+    nbytes = 0;
+    for(ifa = ifaddrs; ifa != NULL; ifa = ifa->ifa_next) {
+        if(ifa->ifa_addr &&
+                ifa->ifa_addr->sa_family == AF_LINK) {
+            nbytes += strnlen(ifa->ifa_name, IFNAMSIZ) + 1;
+            ni++;
+        }
+    }
 
-	/*
-	 * Next, allocate a chunk of memory, use the first part
-	 * for the array of structures, and the last part for
-	 * the strings.
-	 */
-	cp = bsd_malloc((ni + 1) * sizeof(struct if_nameindex) + nbytes, NULL, NULL);
-	ifni = (struct if_nameindex *)cp;
-	if (ifni == NULL)
-		goto out;
-	cp += (ni + 1) * sizeof(struct if_nameindex);
+    /*
+     * Next, allocate a chunk of memory, use the first part
+     * for the array of structures, and the last part for
+     * the strings.
+     */
+    cp = bsd_malloc((ni + 1) * sizeof(struct if_nameindex) + nbytes, NULL, NULL);
+    ifni = (struct if_nameindex *)cp;
+    if(ifni == NULL)
+        goto out;
+    cp += (ni + 1) * sizeof(struct if_nameindex);
 
-	/*
-	 * Now just loop through the list of interfaces again,
-	 * filling in the if_nameindex array and making copies
-	 * of all the strings.
-	 */
-	ifni2 = ifni;
-	for (ifa = ifaddrs; ifa != NULL; ifa = ifa->ifa_next) {
-		if (ifa->ifa_addr &&
-		    ifa->ifa_addr->sa_family == AF_LINK) {
-			ifni2->if_index =
-			    ((struct sockaddr_dl*)ifa->ifa_addr)->sdl_index;
-			ifni2->if_name = cp;
-			strcpy(cp, ifa->ifa_name);
-			ifni2++;
-			cp += strlen(cp) + 1;
-		}
-	}
-	/*
-	 * Finally, don't forget to terminate the array.
-	 */
-	ifni2->if_index = 0;
-	ifni2->if_name = NULL;
+    /*
+     * Now just loop through the list of interfaces again,
+     * filling in the if_nameindex array and making copies
+     * of all the strings.
+     */
+    ifni2 = ifni;
+    for(ifa = ifaddrs; ifa != NULL; ifa = ifa->ifa_next) {
+        if(ifa->ifa_addr &&
+                ifa->ifa_addr->sa_family == AF_LINK) {
+            size_t nlen = strnlen(ifa->ifa_name, IFNAMSIZ);
+            if(nlen >= IFNAMSIZ)
+                nlen = IFNAMSIZ - 1;
+            ifni2->if_index =
+                ((struct sockaddr_dl *)ifa->ifa_addr)->sdl_index;
+            ifni2->if_name = cp;
+            memcpy(cp, ifa->ifa_name, nlen);
+            cp[nlen] = '\0';
+            ifni2++;
+            cp += nlen + 1;
+        }
+    }
+    /*
+     * Finally, don't forget to terminate the array.
+     */
+    ifni2->if_index = 0;
+    ifni2->if_name = NULL;
 out:
-	freeifaddrs(ifaddrs);
-	return(ifni);
+    freeifaddrs(ifaddrs);
+    return(ifni);
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 AROS_LH1(void, if_freenameindex,
          AROS_LHA(struct if_nameindex **, ptr, D0),
          struct MiamiBase *, MiamiBase, 49, Miami
-)
+        )
 {
-	AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-	bsd_free(ptr, NULL);
+    bsd_free(ptr, NULL);
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }

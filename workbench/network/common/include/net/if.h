@@ -1,9 +1,9 @@
 #ifndef _NET_IF_H_
 #define _NET_IF_H_
 /*
- * Copyright (c) 1982, 1986, 1989, 1993
+ * Copyright (C) 1982, 1986, 1989, 1993
  *	The Regents of the University of California.  All rights reserved.
- * Copyright (c) 2005 - 2006
+ * Copyright (C) 2005 - 2006
  *	Pavel Fedin
  * Copyright (C) 2005-2026 The AROS Dev Team.  All rights reserved.
  *
@@ -401,7 +401,7 @@ struct ifnet {
 #define	IFCAP_CANTCHANGE	(IFCAP_NETMAP | IFCAP_NV)
 #define	IFCAP_ALLCAPS		0xffffffff
 
-#define	IFQ_MAXLEN	50
+#define	IFQ_MAXLEN	256
 #define	IFNET_SLOWHZ	1		/* granularity is 1 second */
 
 /*
@@ -481,6 +481,7 @@ struct	ifreq {
 #define	ifr_data	ifr_ifru.ifru_data	/* for use by interface */
 #define ifr_index	ifr_ifru.ifru_index	/* interface index */
 #define ifr_ifindex	ifr_ifru.ifru_index	/* interface index (alias) */
+#define ifr_hwaddr	ifr_ifru.ifru_addr	/* hardware address */
 };
 
 struct ifaliasreq {
