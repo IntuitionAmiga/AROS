@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1985 Regents of the University of California.
+ * Copyright (C) 1985 Regents of the University of California.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -42,7 +42,31 @@ static char sccsid[] = "@(#)res_mkquery.c	6.16 (Berkeley) 3/6/91";
 #include <api/resolv.h>
 #include <kern/amiga_includes.h>
 #include <api/amiga_api.h>
-#include <kern/amiga_subr.h>     
+#include <kern/amiga_subr.h>
+
+/*
+ * Randomized DNS query ID (xorshift32 PRNG).
+ * Prevents DNS cache poisoning via predictable IDs.
+ */
+static u_int32_t res_prng_state = 0;
+
+u_short
+res_randomid(void)
+{
+    u_int32_t x = res_prng_state;
+    if(x == 0) {
+        struct timeval tv;
+        GetSysTime(&tv);
+        x = (u_int32_t)tv.tv_secs ^ ((u_int32_t)tv.tv_micro << 16)
+            ^ (u_int32_t)(IPTR)FindTask(NULL);
+        if(x == 0) x = 0xcafebabe;
+    }
+    x ^= x << 13;
+    x ^= x >> 17;
+    x ^= x << 5;
+    res_prng_state = x;
+    return (u_short)(x & 0xffff);
+}
 
 /*
  * Form all types of queries.
@@ -50,88 +74,88 @@ static char sccsid[] = "@(#)res_mkquery.c	6.16 (Berkeley) 3/6/91";
  */
 
 int res_mkquery(struct SocketBase *libPtr,
-		int op,			/* opcode of query */
-		const char *dname,	/* domain name */
-		int class,
-		int type,		/* class and type of query */
-		const char *data,	/* resource record data */
-		int datalen,		/* length of data */
-		const unsigned char *newrr, /* new rr for modify or append */
-		char *buf,		/* buffer to put query */
-		int buflen)		/* size of buffer */
+                int op,			/* opcode of query */
+                const char *dname,	/* domain name */
+                int class,
+                int type,		/* class and type of query */
+                const char *data,	/* resource record data */
+                int datalen,		/* length of data */
+                const unsigned char *newrr, /* new rr for modify or append */
+                char *buf,		/* buffer to put query */
+                int buflen)		/* size of buffer */
 {
-	register HEADER *hp;
-	register char *cp;
-	register int n;
-	char *dnptrs[10], **dpp, **lastdnptr;
+    register HEADER *hp;
+    register char *cp;
+    register int n;
+    char *dnptrs[10], **dpp, **lastdnptr;
 
 #ifdef RES_DEBUG
 #if defined(__AROS__)
-	bug("[AROSTCP](res_mkquery.c) res_mkquery(%d, %s, %d, %d)\n", op, dname, class, type);
+    bug("[AROSTCP](res_mkquery.c) res_mkquery(%d, %s, %d, %d)\n", op, dname, class, type);
 #else
-	printf("res_mkquery(%d, %s, %d, %d)\n", op, dname, class, type);
+    printf("res_mkquery(%d, %s, %d, %d)\n", op, dname, class, type);
 #endif
 #endif /* RES_DEBUG */
 
-	/*
-	 * Initialize header fields.
-	 */
-	if ((buf == NULL) || (buflen < sizeof(HEADER)))
-		return(-1);
-	bzero(buf, sizeof(HEADER));
-	hp = (HEADER *) buf;
-	hp->id = htons(++_res.id);
-	hp->opcode = op;
-	hp->unused = (_res.options & RES_PRIMARY) != 0;
-	hp->rd = (_res.options & RES_RECURSE) != 0;
-	hp->rcode = NOERROR;
-	cp = buf + sizeof(HEADER);
-	buflen -= sizeof(HEADER);
-	dpp = dnptrs;
-	*dpp++ = buf;
-	*dpp++ = NULL;
-	lastdnptr = dnptrs + sizeof(dnptrs)/sizeof(dnptrs[0]);
-	/*
-	 * perform opcode specific processing
-	 */
-	switch (op) {
-	case QUERY:
-		if ((buflen -= QFIXEDSZ) < 0)
-			return(-1);
-		if ((n = dn_comp((u_char *)dname, (u_char *)cp, buflen,
-		    (u_char **)dnptrs, (u_char **)lastdnptr)) < 0)
-			return (-1);
-		cp += n;
-		buflen -= n;
-		__putshort(type, (u_char *)cp);
-		cp += sizeof(u_short);
-		__putshort(class, (u_char *)cp);
-		cp += sizeof(u_short);
-		hp->qdcount = htons(1);
-		if (op == QUERY || data == NULL)
-			break;
-		/*
-		 * Make an additional record for completion domain.
-		 */
-		buflen -= RRFIXEDSZ;
-		if ((n = dn_comp((u_char *)data, (u_char *)cp, buflen,
-		    (u_char **)dnptrs, (u_char **)lastdnptr)) < 0)
-			return (-1);
-		cp += n;
-		buflen -= n;
-		__putshort(T_NULL, (u_char *)cp);
-		cp += sizeof(u_short);
-		__putshort(class, (u_char *)cp);
-		cp += sizeof(u_short);
-		__putlong(0, (u_char *)cp);
-		cp += sizeof(u_long);
-		__putshort(0, (u_char *)cp);
-		cp += sizeof(u_short);
-		hp->arcount = htons(1);
-		break;
-	default:
-		return (-1); /* is call initially comes from gethostname()
+    /*
+     * Initialize header fields.
+     */
+    if((buf == NULL) || (buflen < sizeof(HEADER)))
+        return(-1);
+    bzero(buf, sizeof(HEADER));
+    hp = (HEADER *) buf;
+    hp->id = htons(res_randomid());
+    hp->opcode = op;
+    hp->unused = (_res.options & RES_PRIMARY) != 0;
+    hp->rd = (_res.options & RES_RECURSE) != 0;
+    hp->rcode = NOERROR;
+    cp = buf + sizeof(HEADER);
+    buflen -= sizeof(HEADER);
+    dpp = dnptrs;
+    *dpp++ = buf;
+    *dpp++ = NULL;
+    lastdnptr = dnptrs + sizeof(dnptrs) / sizeof(dnptrs[0]);
+    /*
+     * perform opcode specific processing
+     */
+    switch(op) {
+    case QUERY:
+        if((buflen -= QFIXEDSZ) < 0)
+            return(-1);
+        if((n = dn_comp((u_char *)dname, (u_char *)cp, buflen,
+                        (u_char **)dnptrs, (u_char **)lastdnptr)) < 0)
+            return (-1);
+        cp += n;
+        buflen -= n;
+        __putshort(type, (u_char *)cp);
+        cp += sizeof(u_short);
+        __putshort(class, (u_char *)cp);
+        cp += sizeof(u_short);
+        hp->qdcount = htons(1);
+        if(op == QUERY || data == NULL)
+            break;
+        /*
+         * Make an additional record for completion domain.
+         */
+        buflen -= RRFIXEDSZ;
+        if((n = dn_comp((u_char *)data, (u_char *)cp, buflen,
+                        (u_char **)dnptrs, (u_char **)lastdnptr)) < 0)
+            return (-1);
+        cp += n;
+        buflen -= n;
+        __putshort(T_NULL, (u_char *)cp);
+        cp += sizeof(u_short);
+        __putshort(class, (u_char *)cp);
+        cp += sizeof(u_short);
+        __putlong(0, (u_char *)cp);
+        cp += sizeof(u_long);
+        __putshort(0, (u_char *)cp);
+        cp += sizeof(u_short);
+        hp->arcount = htons(1);
+        break;
+    default:
+        return (-1); /* is call initially comes from gethostname()
 				no other opcodes are used */
-	}
-	return (cp - buf);
+    }
+    return (cp - buf);
 }

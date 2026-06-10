@@ -39,6 +39,11 @@ static const char strHardwareNameMinorUnknown[] = "x";
 static const char strHardwareNameMinorFmt[] = "%u";
 static const char strHardwareNameSuffix[] = " xHCI Host controller";
 
+#define USB_INTEL_XUSB2PR      0xD0
+#define USB_INTEL_USB2PRM      0xD4
+#define USB_INTEL_USB3_PSSEN   0xD8
+#define USB_INTEL_USB3PRM      0xDC
+
 static BOOL XHCIController__Init(struct PCIController *hc)
 {
     struct XhciHCPrivate *xhcic = NULL;
@@ -231,7 +236,27 @@ takeownership:
         if(nextcap == 0) {
             break;
         }
-        xhciECPOff = nextcap << 2;
+        xhciECPOff += nextcap << 2;
+    }
+
+    IPTR vendor = 0;
+    OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_VendorID, &vendor);
+    if(vendor == 0x8086) {
+        /* Intel port routing. For chipsets exposing both EHCI and xHCI and multiplexing
+           physical ports between them. Switch ports to xHCI host controller. Tested on
+           H18M (0x8c31 - LynxPoint) */
+
+        /* Read routable USB 3.0 ports and switch on SuperSpeed termination on them */
+        ULONG usb3prm = READCONFIGLONG(hc, hc->hc_PCIDeviceObject, USB_INTEL_USB3PRM);
+        WRITECONFIGLONG(hc, hc->hc_PCIDeviceObject, USB_INTEL_USB3_PSSEN, usb3prm);
+
+        /* Read routable USB 2.0 ports and switch power and data lines to xHCI host */
+        ULONG usb2prm = READCONFIGLONG(hc, hc->hc_PCIDeviceObject, USB_INTEL_USB2PRM);
+        WRITECONFIGLONG(hc, hc->hc_PCIDeviceObject, USB_INTEL_XUSB2PR, usb2prm);
+
+        pciusbWarn("xHCI", DEBUGCOLOR_SET "Intel PCH: USB3PSSEN=%08lx XUSB2PR=%08lx" DEBUGCOLOR_RESET" \n",
+                   READCONFIGLONG(hc, hc->hc_PCIDeviceObject, USB_INTEL_USB3_PSSEN),
+                   READCONFIGLONG(hc, hc->hc_PCIDeviceObject, USB_INTEL_XUSB2PR));
     }
 
     UWORD xhciversion;
@@ -266,7 +291,7 @@ takeownership:
     pciusbXHCIDebugV("xHCI", DEBUGCOLOR_SET "  OPR.CONFIG: 0x%08x" DEBUGCOLOR_RESET" \n",
                      AROS_LE2LONG(((volatile struct xhci_hcopr *)xhcic->xhc_XHCIOpR)->config));
 
-    hc->hc_NumPorts = (ULONG)((hcsparams1 >> 24) & 0xFF);
+    hc->hc_NumPorts = xhciPortLimit;
     xhcic->xhc_NumSlots = (ULONG)(hcsparams1 & 0xFF);
 
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "%d ports, %d slots" DEBUGCOLOR_RESET" \n",
@@ -476,12 +501,14 @@ OOP_Object *XHCIController__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot
         char name_buf[64];
         char *hardware_name = NULL;
 
-        sprintf(name_buf, strHardwareNamePrefixFmt, hc->hc_USBVersionMajor);
+        int pos;
+
+        pos = sprintf(name_buf, strHardwareNamePrefixFmt, hc->hc_USBVersionMajor);
         if(hc->hc_USBVersionMinor == 0xFF)
-            sprintf(name_buf + 10, strHardwareNameMinorUnknown);
+            pos += sprintf(name_buf + pos, strHardwareNameMinorUnknown);
         else
-            sprintf(name_buf + 10, strHardwareNameMinorFmt, hc->hc_USBVersionMinor);
-        sprintf(name_buf + 11, strHardwareNameSuffix);
+            pos += sprintf(name_buf + pos, strHardwareNameMinorFmt, hc->hc_USBVersionMinor);
+        sprintf(name_buf + pos, strHardwareNameSuffix);
 
         hardware_name = AllocVec(strlen(name_buf) + 1, MEMF_CLEAR);
         if(hardware_name != NULL) {

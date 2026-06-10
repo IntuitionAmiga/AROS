@@ -676,6 +676,7 @@ LDFLAG_RESIDENT
 CFLAG_RESIDENT
 STRIPFLAGS
 ARFLAGS
+ASCPPFLAGS
 ASFLAGS
 ENABLE_WARPUP
 OBJCOPY
@@ -3311,7 +3312,10 @@ foo:
     nop
 EOF
 
-# Try compiling using the assembler explicitly
+# Try compiling using the assembler explicitly.
+# Also try with $CC since LLVM toolchains set AS=llvm-as (an LLVM IR tool)
+# but actually assemble via clang, which supports -Wa,--defsym forwarding
+# to its integrated assembler.
 if $AS $target_asflags -Wa,--defsym,foo=1 -c conftest.s -o conftest.o >/dev/null 2>&1; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
@@ -3320,6 +3324,19 @@ printf "%s\n" "#define HAVE_AS_DEF_SYM 1" >>confdefs.h
 
   ASFWDOPT="-Wa,"
   ASDEFSYM="${ASFWDOPT}--defsym,"
+elif $CC $target_asflags -Wa,--defsym,foo=1 -x assembler-with-cpp -c conftest.s -o conftest.o >/dev/null 2>&1; then
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes, via CC" >&5
+printf "%s\n" "yes, via CC" >&6; }
+
+printf "%s\n" "#define HAVE_AS_DEF_SYM 1" >>confdefs.h
+
+  ASFWDOPT="-Wa,"
+  ASDEFSYM="${ASFWDOPT}--defsym,"
+elif $CC $target_asflags -DFOO=1 -x assembler-with-cpp -c conftest.s -o conftest.o >/dev/null 2>&1; then
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: using -D preprocessor defines" >&5
+printf "%s\n" "using -D preprocessor defines" >&6; }
+  ASFWDOPT=""
+  ASDEFSYM="-D"
 else
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
@@ -3335,6 +3352,7 @@ case $host in
   optflags="-mcpu=${CPU} $target_optflags"
   linkerflags="$target_ldflags -noixemul -mcpu=${CPU} -r"
   asflags="$target_asflags ${ASDEFSYM}CPU=${CPU} ${ASDEFSYM}LITTLE_ENDIAN=1"
+  ascppflags="-DLITTLE_ENDIAN=1"
   resident=""                                        stripflag=""
  ;;
  i?86-*-aros)
@@ -3343,6 +3361,7 @@ case $host in
   optflags="-m32 -march=${CPU} $target_optflags"
   linkerflags="$target_ldflags"
   asflags="$target_asflags ${ASDEFSYM}CPU=${CPU} ${ASDEFSYM}LITTLE_ENDIAN=1"
+  ascppflags="-DLITTLE_ENDIAN=1"
   resident=""
   buildhandler="true"
   stripflag=""
@@ -3354,6 +3373,7 @@ case $host in
   linkerflags="$target_ldflags -noixemul -m${CPU}"
   asCPU=`echo ${CPU} | sed 's/-.*//'`
   asflags="$target_asflags -m${asCPU} ${ASFWDOPT}--register-prefix-optional ${ASFWDOPT}--bitwise-or ${ASDEFSYM}CPU=${asCPU}"
+  ascppflags=""
   resident="-resident"
   buildhandler="true"
   stripflag=""
@@ -3365,6 +3385,7 @@ case $host in
   linkerflags="$target_ldflags -m${CPU}"
   asCPU=`echo ${CPU} | sed 's/-.*//'`
   asflags="$target_asflags -m${asCPU} ${ASFWDOPT}--register-prefix-optional ${ASFWDOPT}--bitwise-or ${ASDEFSYM}CPU=${asCPU}"
+  ascppflags=""
   resident=""
   buildhandler="true"
   stripflag=""
@@ -3381,6 +3402,7 @@ printf "%s\n" "#define __USE_BASETYPE__ 1" >>confdefs.h
   optflags="-mcpu=${CPU} $target_optflags"
   linkerflags="$target_ldflags -mcpu=${CPU}"
   asflags="$target_asflags -m${CPU} -mregnames ${ASDEFSYM}CPU=${CPU}"
+  ascppflags=""
   resident=""                                        stripflag=""
  ;;
  powerpc-unknown-morphos)
@@ -3392,6 +3414,7 @@ printf "%s\n" "#define USE_INLINE_STDARG 1" >>confdefs.h
   optflags="-mcpu=${CPU} $target_optflags"
   linkerflags="$target_ldflags -noixemul -mcpu=${CPU}"
   asflags="$target_asflags -m${CPU} -mregnames ${ASDEFSYM}CPU=${CPU}"
+  ascppflags=""
   resident="-mresident32"
   buildhandler="true"
   stripflag=""
@@ -3402,6 +3425,7 @@ printf "%s\n" "#define USE_INLINE_STDARG 1" >>confdefs.h
   optflags="$target_optflags -fomit-frame-pointer"
   linkerflags="$target_ldflags"
   asflags="$target_asflags ${ASDEFSYM}CPU=${CPU} ${ASDEFSYM}LITTLE_ENDIAN=1 ${ASDEFSYM}x86_64=1"
+  ascppflags="-DLITTLE_ENDIAN=1"
   resident=""
   buildhandler="true"
   stripflag=""
@@ -3412,6 +3436,7 @@ printf "%s\n" "#define USE_INLINE_STDARG 1" >>confdefs.h
   optflags="$target_optflags -fomit-frame-pointer"
   linkerflags="$target_ldflags"
   asflags="$target_asflags ${ASDEFSYM}CPU=${CPU} ${ASDEFSYM}LITTLE_ENDIAN=1"
+  ascppflags="-DLITTLE_ENDIAN=1"
   resident=""
   buildhandler="true"
   stripflag=""
@@ -3422,6 +3447,7 @@ printf "%s\n" "#define USE_INLINE_STDARG 1" >>confdefs.h
   optflags="$target_optflags -fomit-frame-pointer"
   linkerflags="$target_ldflags"
   asflags="$target_asflags ${ASDEFSYM}CPU=${CPU} ${ASDEFSYM}LITTLE_ENDIAN=1"
+  ascppflags="-DLITTLE_ENDIAN=1"
   resident=""
   buildhandler="true"
   stripflag=""
@@ -3432,6 +3458,7 @@ printf "%s\n" "#define USE_INLINE_STDARG 1" >>confdefs.h
   optflags="$target_optflags -fomit-frame-pointer"
   linkerflags="$target_ldflags"
   asflags="$target_asflags ${ASDEFSYM}CPU=${CPU}"
+  ascppflags=""
   resident=""
   buildhandler="true"
   stripflag=""
@@ -3442,6 +3469,7 @@ printf "%s\n" "#define USE_INLINE_STDARG 1" >>confdefs.h
   optflags="$target_optflags -fomit-frame-pointer"
   linkerflags="$target_ldflags"
   asflags="$target_asflags ${ASDEFSYM}CPU=${CPU} ${ASDEFSYM}LITTLE_ENDIAN=1"
+  ascppflags="-DLITTLE_ENDIAN=1"
   resident=""
   buildhandler="true"
   stripflag=""
@@ -3458,6 +3486,7 @@ top_builddir=$(pwd)
 : ${CPPFLAGS="-DCPU=\"\\\"${CPU}\\\"\" -I. -I${srcdir} -I${top_builddir} -I${top_builddir}/Include/gcc ${os_includedir} $target_cppflags"}
 : ${LDFLAGS="${linkerflags}"}
 : ${ASFLAGS="${asflags}"}
+: ${ASCPPFLAGS="${ascppflags}"}
 : ${ARFLAGS="-ru"}
 : ${STRIPFLAGS="${stripflag}"}
 
@@ -5812,7 +5841,7 @@ printf "%s\n" "#define AC_APPLE_UNIVERSAL_BUILD 1" >>confdefs.h
 
 
 
-ac_config_files="$ac_config_files Makefile AHI/Makefile AHI-Handler/Makefile AddAudioModes/Makefile Device/Makefile Docs/Makefile Drivers/Makefile Drivers/Common/Makefile.common Drivers/Device/Makefile Drivers/Filesave/Makefile Drivers/Void/Makefile Drivers/ac97/Makefile Drivers/VIA-AC97/Makefile Drivers/HDAudio/Makefile Drivers/CMI8738/Makefile Drivers/SB128/Makefile Drivers/EMU10kx/Makefile Drivers/Envy24HT/Makefile Drivers/Envy24/Makefile Drivers/Alsa/Makefile Drivers/OSS/Makefile Drivers/PulseAudio/Makefile Drivers/WASAPI/Makefile Examples/Makefile Examples/Device/PlayTest/Makefile Examples/Extras/CloneAudioModes/Makefile Examples/Low-level/PlaySineEverywhere/Makefile Examples/Low-level/Test-7.1/Makefile Examples/Low-level/ScanAudioModes/Makefile Include/Makefile"
+ac_config_files="$ac_config_files Makefile AHI/Makefile AHI-Handler/Makefile AddAudioModes/Makefile Device/Makefile Docs/Makefile Drivers/Makefile Drivers/Common/Makefile.common Drivers/Device/Makefile Drivers/Filesave/Makefile Drivers/Void/Makefile Drivers/ac97/Makefile Drivers/VIA-AC97/Makefile Drivers/HDAudio/Makefile Drivers/CMI8738/Makefile Drivers/SB128/Makefile Drivers/EMU10kx/Makefile Drivers/Envy24HT/Makefile Drivers/Envy24/Makefile Drivers/Alsa/Makefile Drivers/OSS/Makefile Drivers/PulseAudio/Makefile Drivers/WASAPI/Makefile Drivers/RPiPWM/Makefile Drivers/RPiHDMI/Makefile Examples/Makefile Examples/Device/PlayTest/Makefile Examples/Extras/CloneAudioModes/Makefile Examples/Low-level/PlaySineEverywhere/Makefile Examples/Low-level/Test-7.1/Makefile Examples/Low-level/ScanAudioModes/Makefile Include/Makefile"
 
 ac_config_commands="$ac_config_commands default"
 
@@ -6530,6 +6559,8 @@ do
     "Drivers/OSS/Makefile") CONFIG_FILES="$CONFIG_FILES Drivers/OSS/Makefile" ;;
     "Drivers/PulseAudio/Makefile") CONFIG_FILES="$CONFIG_FILES Drivers/PulseAudio/Makefile" ;;
     "Drivers/WASAPI/Makefile") CONFIG_FILES="$CONFIG_FILES Drivers/WASAPI/Makefile" ;;
+    "Drivers/RPiPWM/Makefile") CONFIG_FILES="$CONFIG_FILES Drivers/RPiPWM/Makefile" ;;
+    "Drivers/RPiHDMI/Makefile") CONFIG_FILES="$CONFIG_FILES Drivers/RPiHDMI/Makefile" ;;
     "Examples/Makefile") CONFIG_FILES="$CONFIG_FILES Examples/Makefile" ;;
     "Examples/Device/PlayTest/Makefile") CONFIG_FILES="$CONFIG_FILES Examples/Device/PlayTest/Makefile" ;;
     "Examples/Extras/CloneAudioModes/Makefile") CONFIG_FILES="$CONFIG_FILES Examples/Extras/CloneAudioModes/Makefile" ;;

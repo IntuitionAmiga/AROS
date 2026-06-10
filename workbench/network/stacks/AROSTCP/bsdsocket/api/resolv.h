@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1983, 1987, 1989 The Regents of the University of California.
+ * Copyright (C) 1983, 1987, 1989 The Regents of the University of California.
  * All rights reserved.
  * Copyright (C) 2005 - 2007 The AROS Dev Team
  *
@@ -102,5 +102,8 @@ extern u_short _getshort(u_char *);
 extern u_long _getlong(u_char *);
 extern void __putshort(u_short, u_char *);
 extern void __putlong(u_long, u_char *);
+
+/* Randomized DNS query ID (RFC 5452) */
+extern u_short res_randomid(void);
 
 #endif /* API_RESOLV_H */

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 /****************************************************************************************/
@@ -214,7 +214,7 @@ VOID MakeMask35(UBYTE *imgdata, UBYTE *imgmask, UBYTE transpcolor, LONG imagew, 
 /****************************************************************************************/
 void *malloc(size_t size)
 {
-    return AllocVec(size, MEMF_PUBLIC);
+    return AllocVec(size, MEMF_PUBLIC | MEMF_CLEAR);
 }
 
 void free(void *ptr)
@@ -249,10 +249,14 @@ STATIC BOOL ReadARGB35(struct DiskObject *icon, struct IFFHandle *iff, struct Fi
     argb = AllocMemIcon(icon, size, MEMF_PUBLIC, IconBase);
     if (!argb) goto fail;
  
-    zsize = AROS_BE2WORD(*((UWORD *)(src + 6))) + 1;
+    if (chunksize < 10) goto fail;
+    if (imagew <= 0 || imageh <= 0 || imagew > 4096 || imageh > 4096) goto fail;
+    /* OS3.5 spec: zsize is the actual compressed payload size (ULONG BE at offset 4) */
+    zsize = AROS_BE2LONG(*((ULONG *)(src + 4)));
+    if (zsize == 0 || zsize > (ULONG)chunksize - 10) goto fail;
     err = uncompress(argb, &size, src + 10, zsize);
-    if (err != Z_OK) {
-        D(bug("%s: Can't uncompress %d ARGB bytes: %s\n", __func__, zsize, zError(err)));
+    if (err != Z_OK || size != (uLongf)((ULONG)imagew * (ULONG)imageh * 4)) {
+        D(bug("%s: Decompress failed: %s (err=%d size=%ld expected=%ld)\n", __func__, zError(err), err, (long)size, (long)((ULONG)imagew * (ULONG)imageh * 4)));
         goto fail;
     }
 
@@ -712,7 +716,7 @@ static BOOL WriteARGB35(struct IFFHandle *iff, struct NativeIcon *icon,
 {
     struct ARGB35_Header {
         ULONG ztype;    /* Always 1 */
-        ULONG zsize;    /* Compressed size, -1 */
+        ULONG zsize;    /* Compressed size (OS3.5 spec: actual byte count) */
         UWORD resv;     /* Always 0 */
     } ahdr;
     Bytef *zdest;
@@ -734,7 +738,7 @@ static BOOL WriteARGB35(struct IFFHandle *iff, struct NativeIcon *icon,
     }
 
     ahdr.ztype = AROS_LONG2BE(1);
-    ahdr.zsize = AROS_LONG2BE(zsize - 1);
+    ahdr.zsize = AROS_LONG2BE((ULONG)zsize);
     ahdr.resv = AROS_WORD2BE(0);
 
     if (!PushChunk(iff, ID_ICON, ID_ARGB, IFFSIZE_UNKNOWN))

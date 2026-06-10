@@ -1,9 +1,9 @@
 /*	$KAME: if_indextoname.c,v 1.0 2005/11/14 16:44:30 sonic Exp $	*/
 
 /*-
- * Copyright (c) 1997, 2000
+ * Copyright (C) 1997, 2000
  *	Berkeley Software Design, Inc.  All rights reserved.
- * Copyright (c) 2005
+ * Copyright (C) 2005
  *	Pavel Fedin
  *
  * Redistribution and use in source and binary forms, with or without
@@ -70,35 +70,37 @@ AROS_LH2(char *, if_indextoname,
          AROS_LHA(LONG, ifindex, D0),
          AROS_LHA(char *, ifname, A0),
          struct MiamiBase *, MiamiBase, 47, Miami
-)
+        )
 {
-	AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-	struct ifaddrs *ifaddrs, *ifa;
-	int error = 0;
+    struct ifaddrs *ifaddrs, *ifa;
+    int error = 0;
 
-	if (getifaddrs(&ifaddrs, MiamiBase->_SocketBase) < 0)
-		return(NULL);	/* getifaddrs properly set errno */
+    if(getifaddrs(&ifaddrs, MiamiBase->_SocketBase) < 0)
+        return(NULL);	/* getifaddrs properly set errno */
 
-	for (ifa = ifaddrs; ifa != NULL; ifa = ifa->ifa_next) {
-		if (ifa->ifa_addr &&
-		    ifa->ifa_addr->sa_family == AF_LINK &&
-		    ifindex == ((struct sockaddr_dl*)ifa->ifa_addr)->sdl_index)
-			break;
-	}
+    for(ifa = ifaddrs; ifa != NULL; ifa = ifa->ifa_next) {
+        if(ifa->ifa_addr &&
+                ifa->ifa_addr->sa_family == AF_LINK &&
+                ifindex == ((struct sockaddr_dl *)ifa->ifa_addr)->sdl_index)
+            break;
+    }
 
-	if (ifa == NULL) {
-		error = ENXIO;
-		ifname = NULL;
-	}
-	else
-		strncpy(ifname, ifa->ifa_name, IFNAMSIZ);
+    if(ifa == NULL) {
+        error = ENXIO;
+        ifname = NULL;
+    } else {
+        size_t nlen = strnlen(ifa->ifa_name, IFNAMSIZ - 1);
+        memcpy(ifname, ifa->ifa_name, nlen);
+        ifname[nlen] = '\0';
+    }
 
-	freeifaddrs(ifaddrs);
+    freeifaddrs(ifaddrs);
 
-	writeErrnoValue(MiamiBase->_SocketBase, error);
-	return(ifname);
+    writeErrnoValue(MiamiBase->_SocketBase, error);
+    return(ifname);
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 

@@ -2,7 +2,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2007 The AROS Dev Team
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -24,11 +24,22 @@
 #define API_GETHTBYNAMADR_H
 
 struct hostent *__gethostbyname(const char *name, struct SocketBase *libPtr);
+struct hostent *__gethostbyname2(const char *name, int af, struct SocketBase *libPtr);
 
 struct hostent * _gethtbyname(struct SocketBase * libPtr,
 			      const char * name);
 struct hostent * _gethtbyaddr(struct SocketBase * libPtr,
 			      const char * addr, int len, int type);
+
+/* Thread-safe resolver variants */
+struct hostent *__gethostbyname_r(const char *name,
+			struct hostent *result, char *buf,
+			LONG buflen, LONG *h_errnop,
+			struct SocketBase *libPtr);
+struct hostent *__gethostbyaddr_r(const char *addr, LONG len, LONG type,
+			struct hostent *result, char *buf,
+			LONG buflen, LONG *h_errnop,
+			struct SocketBase *libPtr);
 
 #endif /* API_GETHTBYNAMADR_H */
 

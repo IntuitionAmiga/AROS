@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -165,6 +165,7 @@ IPTR PointerClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
                     D(kprintf("[Pointer] %s: releasing shared pointer\n", __func__));
                     ReleaseSharedPointer(shared, IntuitionBase);
                 }
+                return (IPTR)o;
             }
             else
             {
@@ -173,8 +174,7 @@ IPTR PointerClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
             }
         }
     }
-
-    return (IPTR)o;
+    return (IPTR)NULL;
 }
 
 /***********************************************************************************/

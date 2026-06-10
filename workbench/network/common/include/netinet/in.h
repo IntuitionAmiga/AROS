@@ -19,7 +19,7 @@
  */
 
 /*
- * Copyright (c) 1982, 1986, 1990 Regents of the University of California.
+ * Copyright (C) 1982, 1986, 1990 Regents of the University of California.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -328,6 +328,51 @@ struct ip_opts {
 #define	IP_RECVRETOPTS	6	/* bool; receive IP options for response */
 #define	IP_RECVDSTADDR	7	/* bool; receive IP dst addr w/datagram */
 #define	IP_RETOPTS	8	/* ip_opts; set/get IP per-packet options */
+#define	IP_MULTICAST_IF		9	/* set/get IP multicast interface */
+#define	IP_MULTICAST_TTL	10	/* set/get IP multicast TTL */
+#define	IP_MULTICAST_LOOP	11	/* set/get IP multicast loopback */
+#define	IP_ADD_MEMBERSHIP	12	/* add an IP group membership */
+#define	IP_DROP_MEMBERSHIP	13	/* drop an IP group membership */
+#define	IP_ADD_SOURCE_MEMBERSHIP 25	/* add source-specific multicast */
+#define	IP_DROP_SOURCE_MEMBERSHIP 26	/* drop source-specific multicast */
+
+/*
+ * Argument structure for IP_ADD_MEMBERSHIP and IP_DROP_MEMBERSHIP.
+ */
+struct ip_mreq {
+	struct in_addr	imr_multiaddr;	/* IP multicast address of group */
+	struct in_addr	imr_interface;	/* local IP address of interface */
+};
+
+/*
+ * Argument structure for IP_ADD_SOURCE_MEMBERSHIP et al.
+ */
+struct ip_mreq_source {
+	struct in_addr	imr_multiaddr;	/* IP multicast address of group */
+	struct in_addr	imr_sourceaddr;	/* IP address of source */
+	struct in_addr	imr_interface;	/* local IP address of interface */
+};
+
+/*
+ * Protocol-independent multicast (RFC 3678).
+ */
+#include <sys/_sockaddr_storage.h>
+
+struct group_req {
+	uint32_t		gr_interface;	/* interface index */
+	struct sockaddr_storage	gr_group;	/* group address */
+};
+
+struct group_source_req {
+	uint32_t		gsr_interface;	/* interface index */
+	struct sockaddr_storage	gsr_group;	/* group address */
+	struct sockaddr_storage	gsr_source;	/* source address */
+};
+
+#define	MCAST_JOIN_GROUP	42	/* join any-source group */
+#define	MCAST_LEAVE_GROUP	43	/* leave all-source group */
+#define	MCAST_JOIN_SOURCE_GROUP	46	/* join source-specific group */
+#define	MCAST_LEAVE_SOURCE_GROUP 47	/* leave source-specific group */
 
 #ifdef KERNEL
 struct in_addr in_makeaddr(u_long net,
@@ -348,6 +393,100 @@ struct in6_addr {
 
 #define IN6ADDR_ANY_INIT {{{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}}}          /* :: */
 #define IN6ADDR_LOOPBACK_INIT {{{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1}}}     /* ::1 */
+
+extern const struct in6_addr in6addr_any;
+extern const struct in6_addr in6addr_loopback;
+
+/*
+ * IPv6 address classification macros (RFC 2553 / POSIX.1-2008).
+ * These use the portable s6_addr[] byte-array accessor so they work
+ * regardless of host byte order or struct in6_addr union layout.
+ */
+
+/* :: (all zeros) */
+#define IN6_IS_ADDR_UNSPECIFIED(a)					\
+	(((a)->s6_addr[0] == 0) && ((a)->s6_addr[1] == 0) &&		\
+	 ((a)->s6_addr[2] == 0) && ((a)->s6_addr[3] == 0) &&		\
+	 ((a)->s6_addr[4] == 0) && ((a)->s6_addr[5] == 0) &&		\
+	 ((a)->s6_addr[6] == 0) && ((a)->s6_addr[7] == 0) &&		\
+	 ((a)->s6_addr[8] == 0) && ((a)->s6_addr[9] == 0) &&		\
+	 ((a)->s6_addr[10] == 0) && ((a)->s6_addr[11] == 0) &&		\
+	 ((a)->s6_addr[12] == 0) && ((a)->s6_addr[13] == 0) &&		\
+	 ((a)->s6_addr[14] == 0) && ((a)->s6_addr[15] == 0))
+
+/* ::1 */
+#define IN6_IS_ADDR_LOOPBACK(a)						\
+	(((a)->s6_addr[0] == 0) && ((a)->s6_addr[1] == 0) &&		\
+	 ((a)->s6_addr[2] == 0) && ((a)->s6_addr[3] == 0) &&		\
+	 ((a)->s6_addr[4] == 0) && ((a)->s6_addr[5] == 0) &&		\
+	 ((a)->s6_addr[6] == 0) && ((a)->s6_addr[7] == 0) &&		\
+	 ((a)->s6_addr[8] == 0) && ((a)->s6_addr[9] == 0) &&		\
+	 ((a)->s6_addr[10] == 0) && ((a)->s6_addr[11] == 0) &&		\
+	 ((a)->s6_addr[12] == 0) && ((a)->s6_addr[13] == 0) &&		\
+	 ((a)->s6_addr[14] == 0) && ((a)->s6_addr[15] == 1))
+
+/* ff00::/8 */
+#define IN6_IS_ADDR_MULTICAST(a)	((a)->s6_addr[0] == 0xff)
+
+/* fe80::/10 */
+#define IN6_IS_ADDR_LINKLOCAL(a)					\
+	(((a)->s6_addr[0] == 0xfe) && (((a)->s6_addr[1] & 0xc0) == 0x80))
+
+/* fec0::/10 (deprecated per RFC 3879, still in API) */
+#define IN6_IS_ADDR_SITELOCAL(a)					\
+	(((a)->s6_addr[0] == 0xfe) && (((a)->s6_addr[1] & 0xc0) == 0xc0))
+
+/* ::ffff:0:0/96 — IPv4-mapped IPv6 address */
+#define IN6_IS_ADDR_V4MAPPED(a)						\
+	(((a)->s6_addr[0] == 0) && ((a)->s6_addr[1] == 0) &&		\
+	 ((a)->s6_addr[2] == 0) && ((a)->s6_addr[3] == 0) &&		\
+	 ((a)->s6_addr[4] == 0) && ((a)->s6_addr[5] == 0) &&		\
+	 ((a)->s6_addr[6] == 0) && ((a)->s6_addr[7] == 0) &&		\
+	 ((a)->s6_addr[8] == 0) && ((a)->s6_addr[9] == 0) &&		\
+	 ((a)->s6_addr[10] == 0xff) && ((a)->s6_addr[11] == 0xff))
+
+/* ::/96 — IPv4-compatible IPv6 address (deprecated) */
+#define IN6_IS_ADDR_V4COMPAT(a)						\
+	(((a)->s6_addr[0] == 0) && ((a)->s6_addr[1] == 0) &&		\
+	 ((a)->s6_addr[2] == 0) && ((a)->s6_addr[3] == 0) &&		\
+	 ((a)->s6_addr[4] == 0) && ((a)->s6_addr[5] == 0) &&		\
+	 ((a)->s6_addr[6] == 0) && ((a)->s6_addr[7] == 0) &&		\
+	 ((a)->s6_addr[8] == 0) && ((a)->s6_addr[9] == 0) &&		\
+	 ((a)->s6_addr[10] == 0) && ((a)->s6_addr[11] == 0) &&		\
+	 !(((a)->s6_addr[12] == 0) && ((a)->s6_addr[13] == 0) &&	\
+	   ((a)->s6_addr[14] == 0) &&					\
+	   (((a)->s6_addr[15] == 0) || ((a)->s6_addr[15] == 1))))
+
+/* Multicast scope tests (RFC 7346) */
+#define IN6_IS_ADDR_MC_NODELOCAL(a)					\
+	(IN6_IS_ADDR_MULTICAST(a) && (((a)->s6_addr[1] & 0x0f) == 0x01))
+#define IN6_IS_ADDR_MC_LINKLOCAL(a)					\
+	(IN6_IS_ADDR_MULTICAST(a) && (((a)->s6_addr[1] & 0x0f) == 0x02))
+#define IN6_IS_ADDR_MC_SITELOCAL(a)					\
+	(IN6_IS_ADDR_MULTICAST(a) && (((a)->s6_addr[1] & 0x0f) == 0x05))
+#define IN6_IS_ADDR_MC_ORGLOCAL(a)					\
+	(IN6_IS_ADDR_MULTICAST(a) && (((a)->s6_addr[1] & 0x0f) == 0x08))
+#define IN6_IS_ADDR_MC_GLOBAL(a)					\
+	(IN6_IS_ADDR_MULTICAST(a) && (((a)->s6_addr[1] & 0x0f) == 0x0e))
+
+/* Address comparison */
+#define IN6_ARE_ADDR_EQUAL(a, b)					\
+	((a)->s6_addr[0] == (b)->s6_addr[0]				\
+	 && (a)->s6_addr[1] == (b)->s6_addr[1]				\
+	 && (a)->s6_addr[2] == (b)->s6_addr[2]				\
+	 && (a)->s6_addr[3] == (b)->s6_addr[3]				\
+	 && (a)->s6_addr[4] == (b)->s6_addr[4]				\
+	 && (a)->s6_addr[5] == (b)->s6_addr[5]				\
+	 && (a)->s6_addr[6] == (b)->s6_addr[6]				\
+	 && (a)->s6_addr[7] == (b)->s6_addr[7]				\
+	 && (a)->s6_addr[8] == (b)->s6_addr[8]				\
+	 && (a)->s6_addr[9] == (b)->s6_addr[9]				\
+	 && (a)->s6_addr[10] == (b)->s6_addr[10]			\
+	 && (a)->s6_addr[11] == (b)->s6_addr[11]			\
+	 && (a)->s6_addr[12] == (b)->s6_addr[12]			\
+	 && (a)->s6_addr[13] == (b)->s6_addr[13]			\
+	 && (a)->s6_addr[14] == (b)->s6_addr[14]			\
+	 && (a)->s6_addr[15] == (b)->s6_addr[15])
 
 struct sockaddr_in6 {
     uint8_t     sin6_len;

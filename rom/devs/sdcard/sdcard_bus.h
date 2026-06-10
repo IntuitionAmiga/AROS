@@ -1,7 +1,7 @@
 #ifndef _SDCARD_BUS_H
 #define _SDCARD_BUS_H
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -10,6 +10,11 @@
 #include <exec/semaphores.h>
 #include <exec/ports.h>
 #include <exec/io.h>
+
+#include <aros/config.h>
+#if defined(__AROSEXEC_SMP__)
+#include <aros/types/spinlock_s.h>
+#endif
 
 #define FNAME_SDCBUS(x)                 SDCARD__SDBus__ ## x
 
@@ -71,8 +76,25 @@ struct sdcard_Bus
     void                                (*sdcb_IOWriteWord)(ULONG, UWORD, struct sdcard_Bus *);
     void                                (*sdcb_IOWriteLong)(ULONG, ULONG, struct sdcard_Bus *);
 
+    /* Controller-specific operations vtable */
+    void                                (*sdcb_SoftReset)(UBYTE, struct sdcard_Bus *);
+    void                                (*sdcb_SetClock)(ULONG, struct sdcard_Bus *);
+    void                                (*sdcb_SetPowerLevel)(ULONG, BOOL, struct sdcard_Bus *);
+    ULONG                               (*sdcb_SendCmd)(struct TagItem *, struct sdcard_Bus *);
+    ULONG                               (*sdcb_WaitCmd)(ULONG, ULONG, struct sdcard_Bus *);
+    ULONG                               (*sdcb_FinishCmd)(struct TagItem *, struct sdcard_Bus *);
+    ULONG                               (*sdcb_FinishData)(struct TagItem *, struct sdcard_Bus *);
+    void                                (*sdcb_BusIRQHandler)(struct sdcard_Bus *, void *);  /* IRQ handler */
+    void                                (*sdcb_SetBusWidth)(UBYTE, struct sdcard_Bus *);  /* Set bus width (1 or 4) */
+    void                                (*sdcb_BusInit)(struct sdcard_Bus *);  /* Scan-time HW init (clock, power, bus width) */
+    void                                (*sdcb_BusPostIRQInit)(struct sdcard_Bus *);  /* Post-IRQ init (enable interrupts, card detect) */
+
     /* Bus Instance Private/Internal */
     IPTR                                sdcb_Private;
+
+#if defined(__AROSEXEC_SMP__)
+    spinlock_t                          sdcb_Lock;       /* SMP: protects BusFlags, listeners, BusStatus */
+#endif
 };
 
 /* Bus Flags .. */
@@ -101,5 +123,12 @@ ULONG FNAME_SDCBUS(Rsp136Unpack)(ULONG *, ULONG, const ULONG);
 
 void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *, void *);
 void FNAME_SDCBUS(BusTask)(struct sdcard_Bus *);
+
+/* Dispatch macros: call through controller-specific vtable */
+#define SDCBUS_SendCmd(tags, bus)                ((bus)->sdcb_SendCmd((tags), (bus)))
+#define SDCBUS_WaitCmd(mask, timeout, bus)       ((bus)->sdcb_WaitCmd((mask), (timeout), (bus)))
+#define SDCBUS_SetClock(speed, bus)              ((bus)->sdcb_SetClock((speed), (bus)))
+#define SDCBUS_SetPowerLevel(lvls, lowest, bus)  ((bus)->sdcb_SetPowerLevel((lvls), (lowest), (bus)))
+#define SDCBUS_SoftReset(mask, bus)              ((bus)->sdcb_SoftReset((mask), (bus)))
 
 #endif /* _SDCARD_BUS_H */

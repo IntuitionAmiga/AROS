@@ -102,7 +102,7 @@ static void cmd_Read64(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
     ULONG count = IOStdReq(io)->io_Length;
     ULONG mask;
 
-    D(bug("[SDCard%02ld] %s(%08x%08x, %08x)\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__, IOStdReq(io)->io_Actual, IOStdReq(io)->io_Offset, count));
+    D(bug("[SDCard%02ld] cmd_Read64(off=%08x%08x, len=%08x)\n", unit->sdcu_UnitNum, IOStdReq(io)->io_Actual, IOStdReq(io)->io_Offset, count));
 
     if (!(unit->sdcu_Flags & AF_Card_HighCapacity))
     {
@@ -140,6 +140,7 @@ static void cmd_Read64(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
         }
         io->io_Error = unit->sdcu_Read64(unit, block, count, IOStdReq(io)->io_Data, &cnt);
 
+        D(bug("[SDCard%02ld] cmd_Read64: err=%d actual=%u\n", unit->sdcu_UnitNum, io->io_Error, cnt));
         IOStdReq(io)->io_Actual = cnt;
     }
 }
@@ -360,9 +361,7 @@ static void cmd_ChangeState(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 
 static void cmd_ProtStatus(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 {
-//    struct sdcard_Unit *unit = (struct sdcard_Unit *)io->io_Unit;
-
-    D(bug("[SDCard%02ld] %s()\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+    D(bug("[SDCard%02ld] %s()\n", ((struct sdcard_Unit *)io->io_Unit)->sdcu_UnitNum, __PRETTY_FUNCTION__));
 
     /* Write unsupported yet, return write protect state *always* */
     IOStdReq(io)->io_Actual = -1;
@@ -379,7 +378,7 @@ static void cmd_ProtStatus(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 
 static void cmd_GetNumTracks(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 {
-    D(bug("[SDCard%02ld] %s()\n", ((struct sdcard_Unit*)io->io_Unit)->sdcu_UnitNum, __PRETTY_FUNCTION__));
+    D(bug("[SDCard%02ld] %s()\n", ((struct sdcard_Unit *)io->io_Unit)->sdcu_UnitNum, __PRETTY_FUNCTION__));
 
     IOStdReq(io)->io_Actual = ((struct sdcard_Unit *)io->io_Unit)->sdcu_Cylinders;
 }
@@ -421,7 +420,7 @@ static void cmd_GetGeometry(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 {
     struct sdcard_Unit *unit = (struct sdcard_Unit *)io->io_Unit;
 
-    D(bug("[SDCard%02ld] %s()\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+    D(bug("[SDCard%02ld] cmd_GetGeometry()\n", unit->sdcu_UnitNum));
 
     if (IOStdReq(io)->io_Length == sizeof(struct DriveGeometry))
     {
@@ -571,6 +570,10 @@ BOOL FNAME_SDC(HandleIO)(struct IORequest *io)
                 nsdq->DeviceType        = NSDEVTYPE_TRACKDISK;
                 nsdq->DeviceSubType     = 0;
                 nsdq->SupportedCommands = (((struct sdcard_Unit*)io->io_Unit)->sdcu_Flags & AF_Card_HighCapacity) ? (UWORD *)NSDSupported : (UWORD *)&NSDSupported[8];
+                D(bug("[SDCard%02ld] NSCMD_DEVICEQUERY: HighCap=%d SizeAvail=%u\n",
+                    ((struct sdcard_Unit*)io->io_Unit)->sdcu_UnitNum,
+                    (((struct sdcard_Unit*)io->io_Unit)->sdcu_Flags & AF_Card_HighCapacity) ? 1 : 0,
+                    nsdq->SizeAvailable));
             }
             IOStdReq(io)->io_Actual = sizeof(struct NSDeviceQueryResult);
             break;
